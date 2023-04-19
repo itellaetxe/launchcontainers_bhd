@@ -1,13 +1,13 @@
 {
  "config": {
-    "subject_id": "S001",
+    "subject_id": "Sxxx",
     "reconall_options": "-qcache -all",
     "hippocampal_subfields": false,
     "brainstem_structures": false,
     "thalamic_nuclei": false,
     "cerebellum":false,
     "hcp":false,
-    "mori":true,
+    "mori":false,
     "aparc2009":false,
     "neuropythy_analysis": false,
     "register_surfaces": false,

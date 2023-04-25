@@ -15,6 +15,6 @@
     "convert_volumes": true,
     "convert_stats": true,
     "run_gtmseg": false,
-    "freesurfer_license": "mengluo1990@gmail.com 40915 *CLNd40FiYUKw FSfv2b7ZXo2J6"
+    "freesurfer_license": "Paste your license here!!"
     }
   }

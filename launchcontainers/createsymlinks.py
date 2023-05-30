@@ -5,7 +5,7 @@ import sys
 import shutil
 import nibabel as nib
 import json
-from launchcontainers import _read_df, check_tractparam
+from launchcontainers import _read_df, check_tractparam, copy_file
 #%%
 def force_symlink(file1, file2, force):
     """
@@ -29,6 +29,7 @@ def force_symlink(file1, file2, force):
 
     """
     # if we don't force to overwrite
+    print("-----------------------------------------------\n")
     if not force:
         try:
             # try the command, if the file are correct and symlink not exist, it will create one
@@ -62,13 +63,14 @@ def force_symlink(file1, file2, force):
                 print("*********** input files are missing, please check *****************\n")
                 raise e
             else:
-                print("***********************ERROR*******************\nWe don't know what happend\n")
+                print("***********************ERROR*******************\nWe don't know what happened\n")
                 raise e
+    print("-----------------------------------------------\n")
     return
 
 
 #%%
-def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_specific_config,run_lc):
+def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_specific_config_path,run_lc):
 
     """
     Parameters
@@ -101,8 +103,8 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     mniroizip = lc_config["container_options"][container]["mniroizip"]
     version = lc_config["container_options"][container]["version"]
     
-    srcFile_container_config_json= container_specific_config[0]
-    
+    srcFile_container_config_json= container_specific_config_path[0]
+    new_container_specific_config_path=[]
     # if we run freesurfer before:
     if pre_fs:
         print(f"########\n the sourceT1 file will be pre_fs\n#########\n")
@@ -227,46 +229,15 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     dstFileMniroizip = os.path.join(dstdstDir_input, "mniroizip", "mniroizip.zip")
 
     #copy the lc_config to analysis also, launchcontainer will read this config
-    new_lc_config_path = os.path.join(Dir_analysis, "analysis-"+analysis+ "lc_config.yaml")
-    if not os.path.isfile(new_lc_config_path) or force:
-        shutil.copy(lc_config_path, new_lc_config_path)
-    new_sub_ses_list_path=os.path.join(Dir_analysis, "analysis-"+analysis+ "sub_ses_list.txt")  
-    if not os.path.isfile(new_sub_ses_list_path) or force:
-        shutil.copy(sub_ses_list_path, new_sub_ses_list_path)
-    # Now that the folder structure is created for this subject, now copy the config file to the analysis folder so that
-    # when we call the Singularity container, it is at the base of the analysis folder and it can create a link
-    # First check that the file is there
-    
-    dstFilecontainer_config = os.path.join(Dir_analysis, "analysis-"+analysis+"_config.json")
-    if not os.path.isfile(srcFile_container_config_json):
-        sys.exit(
-            f"{srcFile_container_config_json} des not exist, CANNOT paste it to the analysis folder, aborting. "
-        )
-    # config is there, now copy to the right folder
-    else:
-        print(f"---start copying container_config.json to analysis folder\n")
-        try:
-            if not os.path.isfile(dstFilecontainer_config) or force:
-                shutil.copy(srcFile_container_config_json, dstFilecontainer_config)
-                print(
-                    f" config.json has been succesfully copied to derivaitons/analysis direcory. "
-                    f"\nREMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
-                )
- 
-        # If source and destination are same
-        except shutil.SameFileError:
-            print("*********Source and destination represents the same file.\n")
- 
-        # If there is any permission issue
-        except PermissionError:
-            print("********Permission denied.\n")
- 
-        # For other errors
-        except:
-            print("********Error occurred while copying file.******\n")
-        
-        
+    new_lc_config_path = os.path.join(Dir_analysis, "lc_config.yaml")
+    copy_file(lc_config_path, new_lc_config_path, force)
 
+    new_sub_ses_list_path=os.path.join(Dir_analysis, "subSesList.txt")
+    copy_file(sub_ses_list_path, new_sub_ses_list_path,force)
+    
+    dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
+    copy_file(srcFile_container_config_json, dstFilecontainer_config,force)
+    new_container_specific_config_path.append(dstFilecontainer_config)
     # Create the symbolic links
     
     force_symlink(srcFileT1, dstFileT1, force)
@@ -276,11 +247,11 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     if mniroizip:
         force_symlink(srcFileMniroizip, dstFileMniroizip, force)
    
-    return new_lc_config_path, new_sub_ses_list_path
+    return new_lc_config_path, new_sub_ses_list_path,new_container_specific_config_path
    
 
 #%%
-def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_specific_config,run_lc):
+def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_specific_config_path,run_lc):
     """
     Parameters
     ----------
@@ -290,7 +261,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
         the subject name looping from df_subSes
     ses : str
         the session name looping from df_subSes.
-    container_specific_config : list
+    container_specific_config_path : list
         the path to the rtppreproc config file
     Returns
     -------
@@ -308,8 +279,8 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     preanalysisfs = lc_config["container_options"][container]["preanalysisfs"]
     rpe = lc_config["container_options"][container]["rpe"]
     version = lc_config["container_options"][container]["version"]
-    srcFile_container_config_json= container_specific_config[0] 
-    
+    srcFile_container_config_json= container_specific_config_path[0]
+    new_container_specific_config_path=[]
     container_specific_config_data = json.load(open(srcFile_container_config_json))
     acqd = container_specific_config_data["config"]["acqd"]
     
@@ -447,46 +418,17 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
         dstFileDwi_nii_R = os.path.join(dstdstDir_input, "RDIF", "dwiR.nii.gz")
         dstFileDwi_bval_R = os.path.join(dstdstDir_input, "RBVL", "dwiR.bval")
         dstFileDwi_bvec_R = os.path.join(dstdstDir_input, "RBVC", "dwiR.bvec")
-    
-   # copy the config_yaml to analysis directory, and launchcontainer will read new path
-    new_lc_config_path = os.path.join(Dir_analysis, "analysis-"+analysis+ "lc_config.yaml")
-    if not os.path.isfile(new_lc_config_path) or force:
-        shutil.copy(lc_config_path, new_lc_config_path)
 
-    new_sub_ses_list_path=os.path.join(Dir_analysis, "analysis-"+analysis+ "sub_ses_list.txt")  
-    if not os.path.isfile(new_sub_ses_list_path) or force:
-        shutil.copy(sub_ses_list_path, new_sub_ses_list_path)
-   
-   # copy the rtpprerpoc config 
-    
-    dstFile_rtppreproc_config = os.path.join(Dir_analysis, "analysis-"+analysis+"_config.json")
-    if not os.path.isfile(srcFile_container_config_json):
-        sys.exit(
-            f"{srcFile_container_config_json} des not exist, CANNOT paste it to the analysis folder, aborting. "
-        )
-    # config is there, now copy to the right folder
-    else:
-        print(f"---start copying container_config.json to analysis folder\n")
-        try:
-            if not os.path.isfile(dstFile_rtppreproc_config) or force:
-                shutil.copy(srcFile_container_config_json, dstFile_rtppreproc_config)
-                print(
-                    f" config.json has been succesfully copied to derivaitons/analysis direcory. "
-                    f"\nREMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
-                )
- 
-        # If source and destination are same
-        except shutil.SameFileError:
-            print("*********Source and destination represents the same file.\n")
- 
-        # If there is any permission issue
-        except PermissionError:
-            print("********Permission denied.\n")
- 
-        # For other errors
-        except:
-            print("********Error occurred while copying file.******\n")
-        
+    # copy the lc_config to analysis also, launchcontainer will read this config
+    new_lc_config_path = os.path.join(Dir_analysis, "lc_config.yaml")
+    copy_file(lc_config_path, new_lc_config_path, force)
+
+    new_sub_ses_list_path = os.path.join(Dir_analysis, "subSesList.txt")
+    copy_file(sub_ses_list_path, new_sub_ses_list_path, force)
+
+    dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
+    copy_file(srcFile_container_config_json, dstFilecontainer_config, force)
+    new_container_specific_config_path.append(dstFilecontainer_config)
     # Create the symbolic links
     force_symlink(srcFileT1, dstT1file, force)
     force_symlink(srcFileMask, dstMaskFile, force)
@@ -499,12 +441,12 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
         force_symlink(srcFileDwi_bval_R, dstFileDwi_bval_R, force)
         force_symlink(srcFileDwi_bvec_R, dstFileDwi_bvec_R, force)
         print("---------------The rtppreproc rpe=True symlinks created")
-    return new_lc_config_path, new_sub_ses_list_path
+    return new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path
 
 
 
 #%%
-def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_specific_config,run_lc):
+def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_specific_config_path,run_lc):
     """
     Parameters
     ----------
@@ -514,7 +456,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
         the subject name looping from df_subSes
     ses : str
         the session name looping from df_subSes.
-    container_specific_config : str
+    container_specific_config_path : str
         
     Returns
     -------
@@ -533,8 +475,9 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     preanalysisfs = lc_config["container_options"][container]["preanalysisfs"]
     precontainerpp = lc_config["container_options"][container]["precontainerpp"]
     preanalysispp = lc_config["container_options"][container]["preanalysispp"]
-    srcFile_container_config_json= container_specific_config[0]
-    srcFile_tractparam= container_specific_config[1]
+    srcFile_container_config_json= container_specific_config_path[0]
+    srcFile_tractparams= container_specific_config_path[1]
+    new_container_specific_config_path=[]
     # the source directory
     srcDirfs = os.path.join(
         basedir,
@@ -611,89 +554,36 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     dstDwi_niiFile = os.path.join(dstdstDir_input, "dwi", "dwi.nii.gz")
     dstDwi_bvalFile = os.path.join(dstdstDir_input, "bval", "dwi.bval")
     dstDwi_bvecFile = os.path.join(dstdstDir_input, "bvec", "dwi.bvec")
-    #dst_tractparams = os.path.join(dstdstDir_input, "tractparams", "tractparams.csv")
-    #src_tractparams = os.path.join(Dir_analysis, "tractparams.csv")
+    dst_tractparams = os.path.join(dstdstDir_input, "tractparams", "tractparams.csv")
+
    
    
    
    # copy the config yaml to analysis folder, the launchcontainer will read from here
+    # copy the lc_config to analysis also, launchcontainer will read this config
     new_lc_config_path = os.path.join(Dir_analysis, "lc_config.yaml")
-    if not os.path.isfile(new_lc_config_path) or force:
-        shutil.copy(lc_config_path,new_lc_config_path)
- 
-    new_sub_ses_list_path=os.path.join(Dir_analysis, "sub_ses_list.txt")
-    if not os.path.isfile(new_sub_ses_list_path) or force:
-        shutil.copy(sub_ses_list_path, new_sub_ses_list_path)
+    copy_file(lc_config_path, new_lc_config_path, force)
 
-   # Copy the rtp-pipeline config to the analysis folder
-    
-    dstFile_rtppipeline_config = os.path.join(Dir_analysis, "config.json")
-    if not os.path.isfile(srcFile_container_config_json):
-        sys.exit(
-            f"{srcFile_container_config_json} does not exist, CANNOT paste it to the analysis folder, aborting. "
-        )
-    # config is there, now copy to the right folder
-    else:
-        print(f"---start copying container_config.json to analysis folder\n")
-        try:
-            if not os.path.isfile(dstFile_rtppipeline_config) or force:
-                shutil.copy(srcFile_container_config_json, dstFile_rtppipeline_config)
-            
-                print(
-                    f" config.json has been succesfully copied to derivatives/analysis directory. "
-                    f"\nREMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
-                )
-        # If source and destination are same
-        except shutil.SameFileError:
-            print("*********Source and destination represents the same file.\n")
- 
-        # If there is any permission issue
-        except PermissionError:
-            print("********Permission denied.\n")
- 
-        # For other errors
-        except:
-            print("********Error occurred while copying file.******\n")    
-    
-    
-    
-    
-    dstFile_tractparam = os.path.join(Dir_analysis, "tractparams.csv")
-    if not os.path.isfile(srcFile_tractparam):
-        sys.exit(
-            f"{srcFile_tractparam} does not exist, CANNOT paste it to the analysis folder, aborting. "
-        )
-    # config is there, now copy to the right folder
-    else:
-        print(f"---start copying tractparam to analysis folder\n")
-        try:
-            if not os.path.isfile(dstFile_tractparam) or force:
-                shutil.copy(srcFile_tractparam, dstFile_tractparam)
-            
-                print(
-                    f" tractparam has been succesfully copied to derivatives/analysis directory. "
-                    f"\nREMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
-                )
-        # If source and destination are same
-        except shutil.SameFileError:
-            print("*********Source and destination represents the same file.\n")
- 
-        # If there is any permission issue
-        except PermissionError:
-            print("********Permission denied.\n")
- 
-        # For other errors
-        except:
-            print("********Error occurred while copying file.******\n")    
-    tractparam_df =_read_df(dstFile_tractparam)
+    new_sub_ses_list_path = os.path.join(Dir_analysis, "subSesList.txt")
+    copy_file(sub_ses_list_path, new_sub_ses_list_path, force)
+
+    dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
+    copy_file(srcFile_container_config_json, dstFilecontainer_config, force)
+    new_container_specific_config_path.append(dstFilecontainer_config)
+    dstFile_tractparams = os.path.join(Dir_analysis, "tractparams.csv")
+    copy_file(srcFile_tractparams, dstFile_tractparams,force)
+    new_container_specific_config_path.append(dstFile_tractparams)
+    tractparam_df =_read_df(dstFile_tractparams)
     check_tractparam(lc_config, sub, ses, tractparam_df)
+
+
     # Create the symbolic links
     force_symlink(srcFileT1, dstAnatomicalFile, force)
     force_symlink(srcFileFs, dstFsfile, force)
     force_symlink(srcFileDwi_nii, dstDwi_niiFile, force)
     force_symlink(srcFileDwi_bvec, dstDwi_bvecFile, force)
     force_symlink(srcFileDwi_bvals, dstDwi_bvalFile, force)
-    #force_symlink(src_tractparams, dst_tractparams, force)
+    force_symlink(dstFile_tractparams, dst_tractparams, force)
     print("-----------------The rtppipeline symlinks created\n")
-    return new_lc_config_path, new_sub_ses_list_path
+    return new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path
     

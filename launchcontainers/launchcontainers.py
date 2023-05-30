@@ -31,10 +31,6 @@ TODO:
     4./ Add the check in launchcontainers.py, that only in some cases we wiill 
         need to use createSymLinks, and for the anatrois, rtppreproc and 
         rtp-pipeline, we will need to do it
-    5./ Edit createSymLinks again and make one function per every container
-        createSymLinks_anatrois.py
-        createSymLinks_rtppreproc.py
-        createSymLinks_rtp-pipeline.py
 """
 # %% parser
 def _get_parser():
@@ -114,7 +110,7 @@ def _read_config(path_to_config_file):
     a dictionary that contains all the config info
 
     """
-    print("2222222222222222222222222222222222222222222222222222222222222222222222\n")
+    print("-----------------------------------------------\n")
     print(f"------Reading the config file {path_to_config_file} \n ")
 
     with open(path_to_config_file, "r") as v:
@@ -126,7 +122,7 @@ def _read_config(path_to_config_file):
     print(f'\nBasedir is: {config["config"]["basedir"]}')
     print(f'\nContainer is: {container}_{config["container_options"][container]["version"]}')
     print(f'\nAnalysis is: analysis-{config["config"]["analysis"]}\n')
-    print("2222222222222222222222222222222222222222222222222222222222222222222222\n")
+    print("-----------------------------------------------\n")
 
     return config
 
@@ -141,14 +137,14 @@ def _read_df(path_to_df_file):
     a dataframe
 
     """
-    outputdf = pd.read_csv(path_to_df_file, sep=",", header=0)
+    outputdf = pd.read_csv(path_to_df_file, dtype=str)
     num_rows = len(outputdf)
 
     # Print the result
-    print("3333333333333333333333333333333333333333333333333333333333333333333333\n")
+    print("-----------------------------------------------\n")
     print(f'The dataframe{path_to_df_file} is successfully read. \n')
     print(f'The DataFrame has {num_rows} rows. \n')
-    print("3333333333333333333333333333333333333333333333333333333333333333333333\n")
+    print("-----------------------------------------------\n")
     
 
     return outputdf
@@ -171,6 +167,7 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
         None.
     """
     # Define the list of required ROIs
+    print("-----------------------------------------------\n")
     required_rois=set()
     for col in ['roi1', 'roi2', 'roi3', 'roi4',"roiexc1","roiexc2"]:
         for val in tractparam_df[col][~tractparam_df[col].isna()].unique():
@@ -207,9 +204,49 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
         sys.exit(1)
 
     ROIs_are_there= required_gz_files.issubset(zip_gz_files)
+    print("-----------------------------------------------\n")
     return ROIs_are_there
+def copy_file(src_file, dst_file, force):
+    print("-----------------------------------------------\n")
+    if not os.path.isfile(src_file):
+        sys.exit(
+            f"{src_file} does NOT exist, CANNOT paste it to the analysis folder, aborting. \n"
+        )
+    # config is there, now copy to the right folder
+    if not (src_file == dst_file):
+        print(f"---start copying {src_file} to analysis folder\n")
+        try:
+            if ((not os.path.isfile(dst_file)) or (force)) or (os.path.isfile(dst_file) and force):
+                shutil.copy(src_file, dst_file)
+                print(
+                    f"{src_file} has been succesfully copied to derivatives/analysis directory. "
+                    f"\nREMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
+                )
+            elif os.path.isfile(dst_file) and not force:
+                print(f"Didn't copy, the{src_file}already exist in {Dir_analysis}")
+
+
+        # If source and destination are same
+        except shutil.SameFileError:
+            print("*********Source and destination represents the same file.\n")
+
+        # If there is any permission issue
+        except PermissionError:
+            print("********Permission denied.\n")
+
+        # For other errors
+        except:
+            print("********Error occurred while copying file.******\n")
+    if src_file == dst_file:
+        print(f"the source file and the destination file are the same, not copy")
+        pass
+
+    print("-----------------------------------------------\n")
+
+
+    return dst_file
 # %% prepare_input_files
-def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path, container_specific_config, run_lc):
+def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path, container_specific_config_path, run_lc):
     """
 
     Parameters
@@ -224,7 +261,7 @@ def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path,
     None.
 
     """
-    print("4444444444444444444444444444444444444444444444444444444444444444444444\n")
+    print("22222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222\n")
     print("-----starting to preprare the input files for analysis\n")
     
 
@@ -242,16 +279,14 @@ def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path,
         
         if RUN == "True":
             if "rtppreproc" in container:
-                new_lc_config_path,new_sub_ses_list_path=csl.rtppreproc(lc_config, lc_config_path, sub, ses, sub_ses_list_path, container_specific_config,run_lc)
+                new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path=csl.rtppreproc(lc_config, lc_config_path, sub, ses, sub_ses_list_path, container_specific_config_path,run_lc)
             elif "rtp-pipeline" in container:
-                if not len(container_specific_config) == 2:
+                if not len(container_specific_config_path) == 2:
                     sys.exit('This container needs the config.json and tratparams.csv as container specific configs')
-                new_lc_config_path,new_sub_ses_list_path=csl.rtppipeline(lc_config,lc_config_path, sub, ses,sub_ses_list_path,container_specific_config,run_lc)
-                #srcFile_tractparam = container_specific_config[1]
-                # tractparam_df=_read_df(srcFile_tractparam)
-                # check_tractparam(lc_config, sub, ses, tractparam_df)
+                new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path=csl.rtppipeline(lc_config,lc_config_path, sub, ses,sub_ses_list_path,container_specific_config_path,run_lc)
+
             elif "anatrois" in container:
-                new_lc_config_path,new_sub_ses_list_path =csl.anatrois(lc_config, lc_config_path,sub, ses,sub_ses_list_path, container_specific_config,run_lc)
+                new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path =csl.anatrois(lc_config, lc_config_path,sub, ses,sub_ses_list_path, container_specific_config_path,run_lc)
             # future container
             else:
                 print(f"******************* ERROR ********************\n")
@@ -261,13 +296,13 @@ def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path,
 
         else:
             continue
-    print("4444444444444444444444444444444444444444444444444444444444444444444444\n")
+    print("22222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222\n")
     
-    return new_lc_config_path, new_sub_ses_list_path
+    return new_lc_config_path, new_sub_ses_list_path,new_container_specific_config_path
 
 # %% launchcontainers
 
-def launchcontainers(sub_ses_list, lc_config, run_it):
+def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path):
     """
     This function launches containers generically in different Docker/Singularity HPCs
     This function is going to assume that all files are where they need to be.
@@ -285,16 +320,8 @@ def launchcontainers(sub_ses_list, lc_config, run_it):
   
    
    """
-    print("5555555555555555555555555555---------the real launchconatiner-----------55555555555555555555555555555555\n")
-    tmpdir = lc_config["config"]["tmpdir"]
-    logdir = lc_config["config"]["logdir"]
-    
-    # If tmpdir and logdir do not exist, create them
-    if not os.path.isdir(tmpdir):
-        os.mkdir(tmpdir)
-    if not os.path.isdir(logdir):
-        os.mkdir(logdir)
-   
+    print("333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\n")
+
     host = lc_config["config"]["host"]
     jobqueue_config= lc_config["host_options"][host]
     
@@ -305,14 +332,15 @@ def launchcontainers(sub_ses_list, lc_config, run_it):
     analysis = lc_config["config"]["analysis"] 
     containerdir = lc_config["config"]["containerdir"] 
     sif_path = os.path.join(containerdir, f"{container}_{version}.sif")
-    
+    force = lc_config["config"]["force"]
+
     # Count how many jobs we need to launch from  sub_ses_list
     n_jobs = np.sum(sub_ses_list.RUN == "True")
 
     client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
     print("\n~~~~this is the cluster and client\n")
     print(f"{client} \n cluster: {cluster} \n")
-    ourlist=[]
+    futures=[]
 
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
@@ -321,46 +349,74 @@ def launchcontainers(sub_ses_list, lc_config, run_it):
         dwi  = row.dwi
         func = row.func
         if RUN=="True" and dwi=="True":
+            tmpdir = os.path.join(
+                basedir,
+                "nifti",
+                "derivatives",
+                f"{container}_{version}",
+                "analysis-" + analysis,
+                "sub-" + sub,
+                "ses-" + ses,
+                "output", "tmp"
+            )
+            logdir = os.path.join(
+                basedir,
+                "nifti",
+                "derivatives",
+                f"{container}_{version}",
+                "analysis-" + analysis,
+                "sub-" + sub,
+                "ses-" + ses,
+                "output", "log"
+            )
+            backup_configs = os.path.join(
+                basedir,
+                "nifti",
+                "derivatives",
+                f"{container}_{version}",
+                "analysis-" + analysis,
+                "sub-" + sub,
+                "ses-" + ses,
+                "output", "configs"
+            )
 
-            # command for launch singularity
             path_to_sub_derivatives=os.path.join(basedir,"nifti","derivatives",
                                                  f"{container}_{version}",
                                                  f"analysis-{analysis}",
                                                  f"sub-{sub}",
                                                  f"ses-{ses}")
-            print(f"~~~~~~~~~ this is the path to sub-ses folder: {path_to_sub_derivatives}\n ")
-            path_to_config=os.path.join(basedir,"nifti","derivatives",
-                                                 f"{container}_{version}",
-                                                 f"analysis-{analysis}",
-                                                 "analysis-"+analysis+"_config.json")
-            # copy the config yaml for every subject and session
-            # shutil.copyfile(os.path.join(basedir,"nifti", "config_lc.yaml"), os.path.join(path_to_sub_derivatives, "config_lc.yaml"))
-            # print(f"--------succefully copied the config_lc.yaml to {path_to_sub_derivatives} folder! you can check this in the future ! \n")
 
-            logfilename=f"{logdir}/t-{container}_a-{analysis}_sub-{sub}_ses-{ses}" 
+            path_to_config_json=new_container_specific_config_path[0]
+            path_to_config_yaml = new_lc_config_path
+            path_to_subSesList = new_sub_ses_list_path
+
+
+            logfilename=f"{logdir}/t-{container}_a-{analysis}_sub-{sub}_ses-{ses}"
+
+            if not os.path.isdir(tmpdir):
+                os.mkdir(tmpdir)
+            if not os.path.isdir(logdir):
+                os.mkdir(logdir)
+            if not os.path.isdir(backup_configs):
+                os.mkdir(backup_configs)
+            backup_config_json = os.path.join(backup_configs, "config.json")
+            backup_config_yaml = os.path.join(backup_configs, "config_lc.yaml")
+            backup_subSesList = os.path.join(backup_configs, "subSesList.txt")
+
             cmd=f"singularity run -e --no-home "\
                 f"--bind /bcbl:/bcbl "\
                 f"--bind /tmp:/tmp "\
                 f"--bind /export:/export "\
                 f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
                 f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                f"--bind {path_to_config}:/flywheel/v0/config.json "\
+                f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
                 f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+
             if run_it:
-                print (f"~~~~~~~~~~~do we run it? {run_it}\n")
-                                
-                print(f"-------run_lc is True, we will launch this command: \n" \
-                      f"$$$$$$-------{cmd}\n")
-                print(f"-----------------\n-----------------\n client is {client}")
-                
-                ourlist.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
-               
-                #shutil.copyfile(os.path.join(logfilename+".o"),
-                #                os.path.join(path_to_sub_derivatives,"stdout.o"))
-                #print("---copied the .o log file to {sub}-{ses} folder")
-                #shutil.copyfile(os.path.join(logfilename+".e"),
-                #                os.path.join(path_to_sub_derivatives,"stderr.e"))
-                #print("---copied the .e error file to {sub}-{ses}")
+                futures.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
+                copy_file(path_to_config_json,backup_config_json,force)
+                copy_file(path_to_config_yaml, backup_config_yaml, force)
+                copy_file(path_to_subSesList, backup_subSesList, force)
 
             else:
                 print(f"--------run_lc is false, if True, we would launch this command: \n" \
@@ -369,62 +425,43 @@ def launchcontainers(sub_ses_list, lc_config, run_it):
                 print("-----please check if the job_script is properlly defined and then starting run_lc \n")
     
     if run_it:
-        print(ourlist)
+        print(futures)
         print('##########')
-        results = client.compute(ourlist)
+        results = client.compute(futures)
         progress(results)
         print(results)
         print('###########')
         results = client.gather(results)
         print(results)
         print('###########')
-        print("5555555555555555555555555555555555555555555555555555555555555555555555\n")
+        print("333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\n")
         client.close()
         cluster.close()
+
     return
 
-def backup_config_for_subj(sub, ses, basedir, ):
-    """
-    One of the TODO:
-        make a function, when this file was run, create a copy of the original yaml file
-        then rename it , add the date and time in the end
-        stored the new yaml file under the output folder
-        At the end, thiknk if we want it per subject, right now it is in the analysis folder
-    """
-    return None
-
 # %% main()
-
-
 def main():
     """launch_container entry point"""
+    # function 1
     inputs = _get_parser()
-    
     lc_config_path = inputs["lc_config"]
     lc_config = _read_config(lc_config_path)
-    
     sub_ses_list = pd.read_csv(inputs["sub_ses_list"],sep=",",dtype=str)
     sub_ses_list_path = inputs["sub_ses_list"]
-    
-    container_specific_config = inputs["container_specific_config"]
-    
+    container_specific_config_path = inputs["container_specific_config"]
     run_lc = inputs["run_lc"]
     
-    basedir = lc_config['config']["basedir"]
-    container = lc_config["config"]["container"]
-    version = lc_config["container_options"][container]
- 
 
-    new_lc_config_path,new_sub_ses_list_path=prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path,container_specific_config,run_lc)
+    new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path=prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path,container_specific_config_path,run_lc)
     
     new_lc_config=_read_config(new_lc_config_path)
-    new_sub_ses_list= pd.read_csv(new_sub_ses_list_path,sep=",",dtype=str)
+    new_sub_ses_list= _read_df(new_sub_ses_list_path)
 
-    print(f"-------{new_lc_config_path}, {new_sub_ses_list_path}")
     if run_lc:
-        launchcontainers(new_sub_ses_list, new_lc_config, True)
+        launchcontainers(new_lc_config, new_sub_ses_list, True,  new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path)
     else:
-        launchcontainers(new_sub_ses_list, new_lc_config, False)
+        launchcontainers(new_lc_config, new_sub_ses_list, False, new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path)
 
 # #%%
 if __name__ == "__main__":

@@ -1,43 +1,55 @@
-# Note:
-# this is the config file for launchcontainers.py 
-# this file should be stored under the dir: ~/PROJECT/nifti with another file: subSES.txt 
-# 
-#
+########################
+# Instruction to set your lc_config.yaml
+# This is the config file for running the launchcontainers.py
+# This file should be copied from garikoitz/launchcontainer/example_configs to your local dir: ~/PROJECT/nifti with another file: subSES.txt 
+########################
 # Structure:
-# three dictionary: config, container_options, and host_options
 
-# in the config dict, it provides info about the directory where data, code, template, container, and logs were stored, 
-# also, it provides info about the container, host, qsub we use. 
+# There are three dictionaries in this yaml: config, container_options, and host_options
+# The config dictionary defines the basic setting of the launchcontainers.py it will specify your project path, what container you are using 
+# and what HPC server you are using.  
+
+# The container_options defines the parameters that are related to each container. It is correlated to the prepare mode when the program creates
+# folder structures for you
+
+# The host_options defines the parameters related to Python dask, a package to send jobs to the cluster.
+
+# Detailed explanations are explained under each dictionary.
+########################
+
 config:
-  # Base folder of your project where the dicom and nifti folder are. 
-  # Give the full path starting from /, do not use ~
-  # If you are using public folders, go from generic public wihout using your path
-  basedir: /export/home/tlei/TESTDATA/PROJ01
-  # I think that in the new version we will not need it, otherwise create a function that obtains it
-  codedir: /export/home/tlei/tlei/soft/launchcontainers
-  # Always necessary, it creates output and error logs per every subject and analysis   
-  # It gets really big. Store somewhere in the cluster.
-  # TODO: when it finishes succesfuly, store the log in the output folder of each subject
-  logdir: /export/home/tlei/TESTDATA/PROJ01  
-  # This is cluster specific. the problem is that tmp files can be huge and fill your quota, 
-  # so in most clusters they will give you a tmp folder that it will be deleted after every run 
-  # and do not count through your total quota. In DIPC thi is very important
-  tmpdir: /export/home/tlei/TESTDATA/PROJ01
-  # Path to where all the singularity images are. For Docker, this can be empty
-  containerdir: /bcbl/home/public/Gari/singularity_images
-  # The container where it will be run, version and other details will be stored in container_options
-  container: "anatrois"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
-  # Give a number or name to your analysis
-  analysis: "01"
-  # TODO: If the analysis exists, and force is true, then overwrite, otherwise stop
-  # This force command applies to symlinks and analyses, if it set to true, it will always overwrite everything
-  # FOR CREATESYMLINKS
-  # if file_exists and force: overwrite
-  # if file_exists and not force: do nothing and print(say that the file existed but you kept it)
-  # if not file_exists: we don't care about force, you add the file (the symlink)
-  # FOR CONTAINER_VERSION_ANALYSIS
-  # IF CONTAINER_VERSION_ANALYSIS_EXISTS and force: print warning and overwirte
-  force: true
+  # The parametes and their explanation are explained in the comments, we also gives you examples of each parameters. 
+  # basedir: 
+      # type: str
+      # Base folder of your project where the dicom and nifti folder are. 
+      # Remember to give the full path of the directory starting from /, do not use ~
+      # If you are using public folders, go from generic public wihout using your path e.g. useing /bcbl/public instead of using /export/xxxx/public
+  # containerdir:
+      # type: str
+      # Path to where all the singularity images are stored. For Docker, this can be empty
+  
+  # container:
+      # type: str
+      # The container name that you want to run, version and other details will be stored in container_options, you need to edit them also
+  # analysis:
+      # type: str or int
+      # The name of your analysis, every analysis will have a folder under derivetives folder
+  # force:
+      # type: bool/ don't sensitive to capital letters True and true both okay
+      # Options whether you will overwritte the existing file or not
+      # This force command applies to symlinks and analyses, if it set to true, it will always overwrite everything
+      # For PREPARE MODE
+      # if file_exists and force: overwrite
+      # if file_exists and not force: do nothing and print(say that the file existed but you kept it)
+      # if not file_exists: we don't care about force, you add the file (the symlink)
+  # host
+      # type: str
+      # The host where this will be run, see below for options
+  basedir: /export/home/llecca/public/LEPA/testlaunchcontainers
+  containerdir: /bcbl/home/public/LEPA/containers
+  container: "rtp-pipeline"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
+  analysis: "03"
+  force: false
   # The host where this will be run, see below for options  
   host: BCBL
   # If true it will use sge or slumr, otherwise it just generates the "docker" or "singularity" commands
@@ -58,7 +70,7 @@ config:
 container_options:
 # Add the containers and options you want to run
   fmriprep:
-    version: 4.2.7-7.1.1
+    version: 
     space: ""
   anatrois:
     version: 4.2.7-7.1.1
@@ -68,15 +80,15 @@ container_options:
     # Add the container name and versions used to create the pre_fs
     precontainerfs: anatrois_4.2.7-7.1.1
     # There can be more than one analysis, give the number of the analysis here
-    preanalysisfs: "01"
+    preanalysisfs: "re-0316-wall-15h"
     # It will find a zip file in the anatrois output, that starts with this string
-    prefs_zipname: anatrois
+    prefs_zipname: "anatrois"
     # These are optional input files. If there is none, leave it empty string
     # If it is empty, it will ignore it and will not create the input/folder
     annotfile: ""
     mniroizip: ""
   rtppreproc:
-    version: 1.3.3
+    version: 1.1.3
     # It checks if there is a reverse phase encoding acquisition
     # Old dcm2nixx will not create empty bvec and bval files if there was an acquisition with just b0-s
     # This code will create them automatically if they are not there
@@ -88,7 +100,7 @@ container_options:
     precontainerfs: anatrois_4.2.7-7.1.1
     preanalysisfs: "01"
   rtp-pipeline:
-    version: 4.2.7-7.1.1
+    version: 4.4.1
     # Find where the input files are. It will take the T1 and the brainmask from here        
     precontainerfs: anatrois_4.2.7-7.1.1
     preanalysisfs: "01"
@@ -101,18 +113,38 @@ container_options:
     # TODO: the checking system is not implemented, the createSymLink it is
     one_tractparams_per_analysis: true
   prfprepare:
-    version: 4.2.7-7.1.1
+    version: 
   prfanalyze:
-    version: 4.2.7-7.1.1
+    version: 
 
 host_options:
     # Default BCBL
     BCBL:
-      mem: 32G
-      que: long.q
-      core: 6
       sin_ver: singularity/3.5.2
       maxwall: 10
+      manager: sge
+      name: "anatrois"
+      # Dask worker options
+      cores: 6                    # Total number of cores per job (it was core for BCBL)
+      memory: 32G                # Total amount of memory per job (it was mem for BCBL)
+      processes: 1                # Number of Python processes per job
+
+      interface: lo             # Network interface to use like eth0 or ib0
+      death-timeout: 100           # Number of seconds to wait if a worker can not find a scheduler
+      local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
+
+      # SGE resource manager options
+      #shebang: "#!/usr/bin/env bash"
+      queue: long.q              # It was que in BCBL
+      project: null
+      walltime: 25:30:00'
+      extra: []
+      env-extra: []
+      job-extra: []
+      logdir: /export/home/llecca/public/LEPA/testlaunchcontainers/logdir
+      resource-spec: null
+
+
     # Defaul DIPC
     DIPC:
       mem: 8G
@@ -123,4 +155,3 @@ host_options:
       system: lscratch
       maxwall: 24
     # Other
-

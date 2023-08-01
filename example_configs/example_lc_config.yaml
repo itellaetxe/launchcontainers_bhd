@@ -45,13 +45,13 @@ config:
   # host
       # type: str
       # The host where this will be run, see below for options
-  basedir: /export/home/llecca/public/LEPA/testlaunchcontainers
-  containerdir: /bcbl/home/public/LEPA/containers
-  container: "rtp-pipeline"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
-  analysis: "03"
+  basedir: /scratch/llecca/devtrajtract/DATA/BERTSOLARI
+  containerdir: /scratch/llecca/containers
+  container: "anatrois"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
+  analysis: "02"
   force: false
   # The host where this will be run, see below for options  
-  host: BCBL
+  host: DIPC
   # If true it will use sge or slumr, otherwise it just generates the "docker" or "singularity" commands
   # Good for testing, just launch for one subject, for example
   qsub: true
@@ -73,14 +73,14 @@ container_options:
     version: 
     space: ""
   anatrois:
-    version: 4.2.7-7.1.1
+    version: 4.5.2-7.3.2
     # If you have run FS previously, you can say true here and it will use the existing output
     pre_fs: false
     # If pre_fs is true, it will try to find it using the options below
     # Add the container name and versions used to create the pre_fs
-    precontainerfs: anatrois_4.2.7-7.1.1
+    precontainerfs: anatrois_4.5.2-7.3.2
     # There can be more than one analysis, give the number of the analysis here
-    preanalysisfs: "re-0316-wall-15h"
+    preanalysisfs: "01"
     # It will find a zip file in the anatrois output, that starts with this string
     prefs_zipname: "anatrois"
     # These are optional input files. If there is none, leave it empty string
@@ -88,23 +88,23 @@ container_options:
     annotfile: ""
     mniroizip: ""
   rtppreproc:
-    version: 1.1.3
+    version: 1.2.0-3.0.3
     # It checks if there is a reverse phase encoding acquisition
     # Old dcm2nixx will not create empty bvec and bval files if there was an acquisition with just b0-s
     # This code will create them automatically if they are not there
     # TODO: make it a function
-    rpe: false
+    rpe: ture
     # Find where the input files are. It will take the T1 and the brainmask from here
     #
     #this thing was pretoolfs originally
-    precontainerfs: anatrois_4.2.7-7.1.1
+    precontainerfs: anatrois_4.5.2-7.3.2
     preanalysisfs: "01"
   rtp-pipeline:
     version: 4.4.1
     # Find where the input files are. It will take the T1 and the brainmask from here        
     precontainerfs: anatrois_4.2.7-7.1.1
     preanalysisfs: "01"
-    precontainerpp: rtppreproc_1.1.3
+    precontainerpp: rtppreproc_1.2.0-3.0.3
     preanalysispp: "01"
     # Porject level tractparams or individual tractparams can be used. 
     # If it is poject level, there should be one tractparams in the analysis-xx folder, and it will crate a symlink in every subjects input folder
@@ -147,11 +147,15 @@ host_options:
 
     # Defaul DIPC
     DIPC:
-      mem: 8G
-      que: regular
-      core: 24
+      memory: 32G
+      queue: regular
+      cores: 24
+      walltime: '22:00:00'
       sin_ver: Singularity/3.5.3-GCC-8.3.0
       manager: slurm
-      system: lscratch
-      maxwall: 24
+      system: scratch
+      name: "anatrois"
+    # maxwall: 5
+      logdir: /scratch/llecca/devtrajtract/DATA/BERTSOLARI/logdir
+      tmpdir: /scratch/llecca/tmp
     # Other

@@ -403,14 +403,22 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
             backup_config_yaml = os.path.join(backup_configs, "config_lc.yaml")
             backup_subSesList = os.path.join(backup_configs, "subSesList.txt")
 
-            cmd=f"singularity run -e --no-home "\
-                f"--bind /bcbl:/bcbl "\
-                f"--bind /tmp:/tmp "\
-                f"--bind /export:/export "\
-                f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
-                f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
-                f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+            if "BCBL" in host:
+                cmd=f"singularity run -e --no-home "\
+                    f"--bind /bcbl:/bcbl "\
+                    f"--bind /tmp:/tmp "\
+                    f"--bind /export:/export "\
+                    f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+                    f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+                    f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+                    f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+            elif "DIPC" in host:
+                cmd=f"singularity run -e --no-home "\
+                    f"--bind /scratch:/scratch "\
+                    f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+                    f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+                    f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+                    f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
 
             if run_it:
                 futures.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))

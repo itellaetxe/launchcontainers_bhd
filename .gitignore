@@ -142,3 +142,5 @@ dmypy.json
 # vim
 *.swp
 
+# custom configs
+myconfigs/

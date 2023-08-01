@@ -1,6 +1,6 @@
 {
     "config":{
-        "acqd": "AP",
+        "pe_dir": "AP",
         "denoise": true,
         "degibbs": true,
         "eddy": true,

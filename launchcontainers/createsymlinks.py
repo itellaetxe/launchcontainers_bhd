@@ -5,7 +5,9 @@ import sys
 import shutil
 import nibabel as nib
 import json
+import subprocess as sp
 from launchcontainers import _read_df, check_tractparam, copy_file
+
 #%%
 def force_symlink(file1, file2, force):
     """
@@ -282,7 +284,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     srcFile_container_config_json= container_specific_config_path[0]
     new_container_specific_config_path=[]
     container_specific_config_data = json.load(open(srcFile_container_config_json))
-    acqd = container_specific_config_data["config"]["acqd"]
+    pe_dir = container_specific_config_data["config"]["pe_dir"]
     
     #acq = container_specific_config["acqd"]
     # define base directory for particular subject and session
@@ -308,33 +310,69 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     # 3 dwi file that needs to be preprocessed, under nifti/sub/ses/dwi
     # the nii.gz
     srcFileDwi_nii = os.path.join(
-        basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_acq-"+acqd+"_dwi.nii.gz"
+        basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+pe_dir+"_dwi.nii.gz"
     )
     # the bval.gz
     srcFileDwi_bval = os.path.join(
-        basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_acq-"+acqd+"_dwi.bval"
+        basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+pe_dir+"_dwi.bval"
     )
     # the bvec.gz
     srcFileDwi_bvec = os.path.join(
-        basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_acq-"+acqd+"_dwi.bvec"
+        basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+pe_dir+"_dwi.bvec"
     )
+    # check how many *dir_dwi.nii.gz there are in the nifti/sub/ses/dwi directory
+    dwi_dir = glob.glob(os.path.join(basedir_subses,"dwi","*_dir-"+pe_dir+"*_dwi.nii.gz"))
+    if len(dwi_dir) > 1:
+        dwi_acq = [f for f in dwi_dir if 'acq-' in f]
+        if len(dwi_acq) == 0:
+            print(f"No files with different acq- to concatenate.\n")
+        elif len(dwi_acq) == 1:
+            print(f"Found only {dwi_acq[0]} to concatenate. There must be at least two files with different acq.\n")
+        elif len(dwi_acq) > 1:
+            if not os.path.isfile(srcFileDwi_nii):
+                print(f"Concatenating with mrcat of mrtrix3 these files: {dwi_acq} in: {srcFileDwi_nii} \n")
+                dwi_acq.sort()
+                sp.run(['mrcat',*dwi_acq,srcFileDwi_nii])
+            # also get the bvecs and bvals
+            bvals_dir = glob.glob(os.path.join(basedir_subses,"dwi","*_dir-"+pe_dir+"*_dwi.bval"))
+            bvecs_dir = glob.glob(os.path.join(basedir_subses,"dwi","*_dir-"+pe_dir+"*_dwi.bvec"))
+            bvals_acq = [f for f in bvals_dir if 'acq-' in f]
+            bvecs_acq = [f for f in bvecs_dir if 'acq-' in f]
+            if len(dwi_acq) == len(bvals_acq) and not os.path.isfile(srcFileDwi_bval):
+                bvals_acq.sort()
+                bval_cmd = "paste -d ' '"
+                for bvalF in bvals_acq:
+                    bval_cmd = bval_cmd+" "+bvalF
+                bval_cmd = bval_cmd+" > "+srcFileDwi_bval
+                sp.run(bval_cmd,shell=True)
+            else:
+                print("Missing bval files")
+            if len(dwi_acq) == len(bvecs_acq) and not os.path.isfile(srcFileDwi_bvec):
+                bvecs_acq.sort()
+                bvec_cmd = "paste -d ' '"
+                for bvecF in bvecs_acq:
+                    bvec_cmd = bvec_cmd+" "+bvecF
+                bvec_cmd = bvec_cmd+" > "+srcFileDwi_bvec
+                sp.run(bvec_cmd,shell=True)
+            else:
+                print("Missing bvec files")
     # check_create_bvec_bval（force) one of the todo here
     if rpe:
-        if acqd == "PA":
-            acqdrpe = "AP"
-        elif acqd == "AP":
-            acqdrpe = "PA"
+        if pe_dir == "PA":
+            rpe_dir = "AP"
+        elif pe_dir == "AP":
+            rpe_dir = "PA"
         # the reverse direction nii.gz
         srcFileDwi_nii_R = os.path.join(
-            basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses +"_acq-"+acqdrpe+"_dwi.nii.gz"
+            basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses +"_dir-"+rpe_dir+"_dwi.nii.gz"
         )
         # the reverse direction bval
         srcFileDwi_bval_R = os.path.join(
-            basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_acq-"+acqdrpe+"_dwi.bval"
+            basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+rpe_dir+"_dwi.bval"
         )
         # the reverse diretion bvec
         srcFileDwi_bvec_R = os.path.join(
-            basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_acq-"+acqdrpe+"_dwi.bvec"
+            basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+rpe_dir+"_dwi.bvec"
         )
 
         # If bval and bvec do not exist because it is only b0-s, create them

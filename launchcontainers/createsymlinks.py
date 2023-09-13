@@ -91,19 +91,19 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     """
     # define local variables from lc_config dict
     # general level variables:
-    basedir = lc_config["config"]["basedir"]
-    container = lc_config["config"]["container"]
-    force = (lc_config["config"]["force"])&(~run_lc)
-    analysis = lc_config["config"]["analysis"]
+    basedir = lc_config["general"]["basedir"]
+    container = lc_config["general"]["container"]
+    force = (lc_config["general"]["force"])&(~run_lc)
+    analysis = lc_config["general"]["analysis"]
     # container specific:
-    pre_fs = lc_config["container_options"][container]["pre_fs"]
-    prefs_zipname = lc_config["container_options"][container]["prefs_zipname"]
+    pre_fs = lc_config["container_specific"][container]["pre_fs"]
+    prefs_zipname = lc_config["container_specific"][container]["prefs_zipname"]
     # I added this line, shall we modify config yaml
-    precontainerfs = lc_config["container_options"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_options"][container]["preanalysisfs"]
-    annotfile = lc_config["container_options"][container]["annotfile"]
-    mniroizip = lc_config["container_options"][container]["mniroizip"]
-    version = lc_config["container_options"][container]["version"]
+    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
+    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+    annotfile = lc_config["container_specific"][container]["annotfile"]
+    mniroizip = lc_config["container_specific"][container]["mniroizip"]
+    version = lc_config["container_specific"][container]["version"]
     
     srcFile_container_config_json= container_specific_config_path[0]
     new_container_specific_config_path=[]
@@ -247,7 +247,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     if annotfile:
         force_symlink(srcFileAnnot, dstFileAnnot, force)
     if mniroizip:
-        force_symlink(srcFileMniroizip, dstFileMniroizip, force)
+        force_symlink(srcFileMiniroizip, dstFileMniroizip, force)
    
     return new_lc_config_path, new_sub_ses_list_path,new_container_specific_config_path
    
@@ -272,15 +272,15 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     """
     # define local variables from config dict
     # general level variables:
-    basedir = lc_config["config"]["basedir"]
-    container = lc_config["config"]["container"]
-    force = (lc_config["config"]["force"])&(~run_lc)
-    analysis = lc_config["config"]["analysis"]
+    basedir = lc_config["general"]["basedir"]
+    container = lc_config["general"]["container"]
+    force = (lc_config["general"]["force"])&(~run_lc)
+    analysis = lc_config["general"]["analysis"]
     # container specific:
-    precontainerfs = lc_config["container_options"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_options"][container]["preanalysisfs"]
-    rpe = lc_config["container_options"][container]["rpe"]
-    version = lc_config["container_options"][container]["version"]
+    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
+    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+    rpe = lc_config["container_specific"][container]["rpe"]
+    version = lc_config["container_specific"][container]["version"]
     srcFile_container_config_json= container_specific_config_path[0]
     new_container_specific_config_path=[]
     container_specific_config_data = json.load(open(srcFile_container_config_json))
@@ -503,16 +503,16 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     """
     # define local variables from config dict
     # general level variables:
-    basedir = lc_config["config"]["basedir"]
-    container = lc_config["config"]["container"]
-    force = (lc_config["config"]["force"])&(~run_lc)
-    analysis = lc_config["config"]["analysis"]
+    basedir = lc_config["general"]["basedir"]
+    container = lc_config["general"]["container"]
+    force = (lc_config["general"]["force"])&(~run_lc)
+    analysis = lc_config["general"]["analysis"]
     # rtppipeline specefic variables
-    version = lc_config["container_options"][container]["version"]
-    precontainerfs = lc_config["container_options"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_options"][container]["preanalysisfs"]
-    precontainerpp = lc_config["container_options"][container]["precontainerpp"]
-    preanalysispp = lc_config["container_options"][container]["preanalysispp"]
+    version = lc_config["container_specific"][container]["version"]
+    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
+    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+    precontainerpp = lc_config["container_specific"][container]["precontainerpp"]
+    preanalysispp = lc_config["container_specific"][container]["preanalysispp"]
     srcFile_container_config_json= container_specific_config_path[0]
     srcFile_tractparams= container_specific_config_path[1]
     new_container_specific_config_path=[]

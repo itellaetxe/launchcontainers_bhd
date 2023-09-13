@@ -116,12 +116,12 @@ def _read_config(path_to_config_file):
     with open(path_to_config_file, "r") as v:
         config = yaml.load(v, Loader=SafeLoader)
 
-    container = config["config"]["container"]
+    container = config["general"]["container"]
 
-    print(f"----Successfully read config_lc.yaml")
-    print(f'\nBasedir is: {config["config"]["basedir"]}')
-    print(f'\nContainer is: {container}_{config["container_options"][container]["version"]}')
-    print(f'\nAnalysis is: analysis-{config["config"]["analysis"]}\n')
+    print(f"----Successfully read the config file {path_to_config_file}")
+    print(f'\nBasedir is: {config["general"]["basedir"]}')
+    print(f'\nContainer is: {container}_{config["container_specific"][container]["version"]}')
+    print(f'\nAnalysis is: analysis-{config["general"]["analysis"]}\n')
     print("-----------------------------------------------\n")
 
     return config
@@ -175,10 +175,10 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
                 required_rois.add(val)
 
     # Define the zip file
-    basedir = lc_config["config"]["basedir"]
-    container = lc_config["config"]["container"]
-    precontainerfs = lc_config["container_options"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_options"][container]["preanalysisfs"]
+    basedir = lc_config["general"]["basedir"]
+    container = lc_config["general"]["container"]
+    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
+    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
     fs_zip = os.path.join(
         basedir,
         "nifti",
@@ -223,7 +223,7 @@ def copy_file(src_file, dst_file, force):
                     f"\nREMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
                 )
             elif os.path.isfile(dst_file) and not force:
-                print(f"Didn't copy, the{src_file}already exist in {Dir_analysis}")
+                print(f"Didn't copy, the{src_file}already exist in {1}")
 
 
         # If source and destination are same
@@ -272,8 +272,8 @@ def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path,
         RUN = row.RUN
         dwi = row.dwi
         func = row.func
-        container = lc_config["config"]["container"]
-        version = lc_config["container_options"][container]["version"]
+        container = lc_config["general"]["container"]
+        version = lc_config["container_specific"][container]["version"]
         print("The current run is:")
         print(f"{sub}_{ses}_RUN-{RUN}_{container}_{version}\n")
         
@@ -302,7 +302,7 @@ def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path,
 
 # %% launchcontainers
 
-def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path):
+def launchcontainers(lc_config, sub_ses_list, run_it , new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path):
     """
     This function launches containers generically in different Docker/Singularity HPCs
     This function is going to assume that all files are where they need to be.
@@ -322,22 +322,22 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
    """
     print("333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\n")
 
-    host = lc_config["config"]["host"]
+    host = lc_config["general"]["host"]
     jobqueue_config= lc_config["host_options"][host]
     
 
-    basedir = lc_config["config"]["basedir"]
-    container = lc_config["config"]["container"] 
-    version = lc_config["container_options"][container]["version"]
-    analysis = lc_config["config"]["analysis"] 
-    containerdir = lc_config["config"]["containerdir"] 
+    basedir = lc_config["general"]["basedir"]
+    container = lc_config["general"]["container"] 
+    version = lc_config["container_specific"][container]["version"]
+    analysis = lc_config["general"]["analysis"] 
+    containerdir = lc_config["general"]["containerdir"] 
     sif_path = os.path.join(containerdir, f"{container}_{version}.sif")
-    force = lc_config["config"]["force"]
+    force = lc_config["general"]["force"]
 
     # Count how many jobs we need to launch from  sub_ses_list
-    n_jobs = np.sum(sub_ses_list.RUN == "True")
+    n_job = np.sum(sub_ses_list.RUN == "True")
 
-    client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
+    client, cluster = dsq.dask_scheduler(jobqueue_config,n_job)
     print("\n~~~~this is the cluster and client\n")
     print(f"{client} \n cluster: {cluster} \n")
     futures=[]

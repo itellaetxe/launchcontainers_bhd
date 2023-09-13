@@ -1,59 +1,70 @@
 ########################
-# Instruction to set your lc_config.yaml
-# This is the config file for running the launchcontainers.py
-# This file should be copied from garikoitz/launchcontainer/example_configs to your local dir: ~/PROJECT/nifti with another file: subSES.txt 
+# This yaml file is to config launchcontainer, by inputing the correct infomation, you will be able to launch the corresponding container on your local or cluster
+#
+# This file should be copied from garikoitz/launchcontainer/example_configs 
+# You may want to put it to your working directory ~/PROJECT/nifti
+# It will work with a subsesList.txt file and other container specific config files
+
 ########################
-# Structure:
+########################
+# General description:
+# There are three categories of config information for you to set up this soft: 
+# general settings, 
+# container specific settings, 
+# and computing host settings(we call it host options).
 
-# There are three dictionaries in this yaml: config, container_options, and host_options
-# The config dictionary defines the basic setting of the launchcontainers.py it will specify your project path, what container you are using 
-# and what HPC server you are using.  
-
-# The container_options defines the parameters that are related to each container. It is correlated to the prepare mode when the program creates
-# folder structures for you
-
-# The host_options defines the parameters related to Python dask, a package to send jobs to the cluster.
-
+########################
+########################
 # Detailed explanations are explained under each dictionary.
-########################
 
-config:
-  # The parametes and their explanation are explained in the comments, we also gives you examples of each parameters. 
-  # basedir: 
+########################
+general:
+
+  # basedir:  
       # type: str
-      # Base folder of your project where the dicom and nifti folder are. 
-      # Remember to give the full path of the directory starting from /, do not use ~
-      # If you are using public folders, go from generic public wihout using your path e.g. useing /bcbl/public instead of using /export/xxxx/public
+      # description: Path to the folder of your project where you put the dicom and nifti folders. 
+      # author note: 
+      #   1. Remember to give the full path of the directory starting from /, do not use ~
+      #   2. If you are using public folders, go from generic public wihout using your path e.g. useing /bcbl/public instead of using /export/xxxx/public
   # containerdir:
       # type: str
-      # Path to where all the singularity images are stored. For Docker, this can be empty
-  
+      # description: Path to where all the singularity images are stored. For Docker, this can be empty 
   # container:
       # type: str
-      # The container name that you want to run, version and other details will be stored in container_options, you need to edit them also
+      # description: Name of the container you want to launch, version and other details will needs to be input in container_options
+      # auther note: 
+      #   1. the valid options are listed below, be sure not to input wrong name
   # analysis:
       # type: str or int
-      # The name of your analysis, every analysis will have a folder under derivetives folder
+      # description: The name of your analysis, e.g. 01, 001, abcd, etc. It will help you create a corresponding folder under derivetives/container
   # force:
-      # type: bool/ don't sensitive to capital letters True and true both okay
-      # Options whether you will overwritte the existing file or not
-      # This force command applies to symlinks and analyses, if it set to true, it will always overwrite everything
-      # For PREPARE MODE
-      # if file_exists and force: overwrite
-      # if file_exists and not force: do nothing and print(say that the file existed but you kept it)
-      # if not file_exists: we don't care about force, you add the file (the symlink)
+      # type: bool / don't sensitive to capital letters True and true both okay
+      # description: Options whether you want to overwritte the existing file or not
+      # author note: 
+      #   1.This force command applies to symlinks and analyses, if it set to true, it will always overwrite everything
+      #   2.For PREPARE MODE
+      #     if file_exists and force: overwrite
+      #     if file_exists and not force: do nothing and print(say that the file existed but you kept it)
+      #     if not file_exists: we don't care about force, you add the file (the symlink)
   # host
       # type: str
-      # The host where this will be run, see below for options
+      # description: where you want to run the program, valid options: local, BCBL, DIPC.
+       
+  
   basedir: /scratch/llecca/devtrajtract/DATA/BERTSOLARI
   containerdir: /scratch/llecca/containers
   container: "anatrois"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
   analysis: "02"
   force: false
-  # The host where this will be run, see below for options  
-  host: DIPC
-  # If true it will use sge or slumr, otherwise it just generates the "docker" or "singularity" commands
-  # Good for testing, just launch for one subject, for example
+  host: BCBL #valid options: local, BCBL, DIPC.
+
+# not implemented yet, thinking how to do it.
+  prepare_mode: true
+  # if it's true, then do creat symlinks but don't send the jobs
+  # if it's false 
+  print_command_only: only print the command, do nothing
+  
+  # do nothing, and print in the screen what you are going to send
   qsub: true
   # Set this to true to just show the text of what it is going to launch
   # If this is set to true, it will not launch anything, it will only throw the text with the commands that will be launch
@@ -65,9 +76,9 @@ config:
   # cmd="do this and this"
   # print(cmd)
   # if not text_only: subprocess.run(cmd,shell=True)
-  text_only: true
-
-container_options:
+  
+   
+container_specific:
 # Add the containers and options you want to run
   fmriprep:
     version: 
@@ -159,3 +170,5 @@ host_options:
       logdir: /scratch/llecca/devtrajtract/DATA/BERTSOLARI/logdir
       tmpdir: /scratch/llecca/tmp
     # Other
+    local:
+    #  TODO

@@ -42,7 +42,7 @@ def get_parser():
         "--lc_config",
         type=str,
         # default="/Users/tiger/TESTDATA/PROJ01/nifti/config_launchcontainer_copy.yaml",
-        default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/lc_config.yaml",
+        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/lc_config.yaml",
         help="path to the config file",
     )
     parser.add_argument(
@@ -50,7 +50,7 @@ def get_parser():
         "--sub_ses_list",
         type=str,
         # default="/Users/tiger/TESTDATA/PROJ01/nifti/subSesList.txt",
-        default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/subSesList.txt",
+        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/subSesList.txt",
         help="path to the subSesList",
     )
     parser.add_argument(
@@ -58,6 +58,7 @@ def get_parser():
         "--container_specific_config",
         nargs='+',
         # default="/Users/tiger/Documents/GitHub/launchcontainers/example_configs/container_especific_example_configs/anatrois/4.2.7_7.1.1/example_config.json",
+        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/config.json",
         help="path to the container specific config file(s). First file needs to be the config.json file of the container. Some containers might need more config files (e.g., rtp-pipeline needs tractparams.csv). Add them here separated with a space.",
     )
    
@@ -110,6 +111,7 @@ def read_yaml(path_to_config_file):
             +f'Basedir is: {config["general"]["basedir"]} \n'
             +f'Container is: {container}_{config["container_specific"][container]["version"]} \n'
             +f'Analysis is: analysis-{config["general"]["analysis"]} \n'
+            +f'Host is: {config["general"]["host"]} \n'
             +f"##################################################### \n")
 
     return config
@@ -252,37 +254,6 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
     logger.info("\n"+
                 "#####################################################\n")
     return ROIs_are_there
-
-#%%
-def main():
-    parser_namespace, parser_dict = get_parser()
-    
-    print(parser_dict['lc_config'])
-    print("this is : \n",parser_namespace.container_specific_config)
-
-    lc_config_path = parser_namespace.lc_config
-    lc_config =read_yaml(lc_config_path)
-
-    print_command_only=lc_config["general"]["print_command_only"]
-
-    print(print_command_only)
-
-    container_specific_config_path = parser_dict["container_specific_config"]
-    print(container_specific_config_path)
-    '''
-    if parser_namespace.verbose:  
-        print("verbose is on")
-    else:
-        print("verbose is OFF")
-    
-    print("\n", parser_namespace)
-'''
-if __name__ == "__main__":
-    setup_logger()
-    logger.setLevel(logging.INFO)
-    main() 
-
-
 
 
 

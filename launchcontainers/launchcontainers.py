@@ -1,25 +1,11 @@
 import nibabel as nib
-import importlib
-from logging import DEBUG
 import os
-import glob
 import subprocess as sp
-import shutil
 import numpy as np
-import pandas as pd
-
-import json
-import sys
 import logging
-from datetime import datetime
-import pip
-import pandas as pd
+import shlex
 # Dask imports
-from dask import compute
 from dask import delayed as delayed_dask
-from dask import config
-from dask.distributed import Client
-from dask_jobqueue import PBSCluster, SGECluster, SLURMCluster
 from dask.distributed import progress
 
 # modules in lc
@@ -150,6 +136,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it , new_lc_config_path, new_s
                     f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
                     f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
                     f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+            
             elif "DIPC" in host:
                 cmd=f"singularity run -e --no-home "\
                     f"--bind /scratch:/scratch "\
@@ -157,7 +144,17 @@ def launchcontainers(lc_config, sub_ses_list, run_it , new_lc_config_path, new_s
                     f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
                     f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
                     f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
-
+            
+            elif "local" in host:
+                cmd=f"singularity run -e --no-home "\
+                    f"--bind /bcbl:/bcbl "\
+                    f"--bind /tmp:/tmp "\
+                    f"--bind /export:/export "\
+                    f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+                    f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+                    f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+                    f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+            
             if run_it:
                 futures.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
                 do.copy_file(path_to_config_json,backup_config_json,force)
@@ -167,9 +164,9 @@ def launchcontainers(lc_config, sub_ses_list, run_it , new_lc_config_path, new_s
             else:
                 logger.critical("\n"
                                 +f"--------run_lc is false, if True, we would launch this command: \n"
-                                +f"--------{cmd}\n"
-                                +f"-------The cluster job_scipt is  {cluster.job_script()} \n"
-                                +"-----please check if the job_script is properlly defined and then starting run_lc \n")
+                                +f"\n"
+                                +f"{cmd}\n\n"
+                                +"Please check if the job_script is properlly defined and then starting run_lc \n")
     
     if run_it:
         logger.info(futures)
@@ -202,7 +199,7 @@ def main():
     sub_ses_list_path = parser_namespace.sub_ses_list
     sub_ses_list = do.read_df(sub_ses_list_path)
     
-    container_specific_config_path = parser_dict["container_specific_config"] #this is a list 
+    container_specific_config_path = parser_dict["container_specific_config"]#this is a list 
     
     # stored value
     run_lc = parser_namespace.run_lc
@@ -215,12 +212,13 @@ def main():
     # set logger message level TODO: this should be implememt to be changeable for future 
     if print_command_only:    
         logger.setLevel(logging.CRITICAL)
-    elif verbose:
+    
+    if verbose:
         logger.setLevel(logging.INFO)    
 
-    new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path=prepare.prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path,container_specific_config_path,run_lc)
+    new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path=prepare.prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path, container_specific_config_path, run_lc)
     
-    new_lc_config=do.read_config(new_lc_config_path)
+    new_lc_config=do.read_yaml(new_lc_config_path)
     new_sub_ses_list=do.read_df(new_sub_ses_list_path)
 
 

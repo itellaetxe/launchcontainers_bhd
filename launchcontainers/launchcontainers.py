@@ -3,7 +3,6 @@ import os
 import subprocess as sp
 import numpy as np
 import logging
-import shlex
 # Dask imports
 from dask import delayed as delayed_dask
 from dask.distributed import progress

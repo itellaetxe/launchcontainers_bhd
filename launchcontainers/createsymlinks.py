@@ -6,8 +6,10 @@ import shutil
 import nibabel as nib
 import json
 import subprocess as sp
-from launchcontainers import _read_df, check_tractparam, copy_file
+from utils import read_df, check_tractparam, copy_file
+import logging
 
+logger=logging.getLogger("GENERAL")
 #%%
 def force_symlink(file1, file2, force):
     """
@@ -31,43 +33,59 @@ def force_symlink(file1, file2, force):
 
     """
     # if we don't force to overwrite
-    print("-----------------------------------------------\n")
+    logger.ino("\n"
+               +"-----------------------------------------------\n")
     if not force:
         try:
             # try the command, if the file are correct and symlink not exist, it will create one
-            print(f"----creating symlink for source file: {file1} and destination file: {file2}\n")
+            logger.ino("\n"
+                       +f"---creating symlink for source file: {file1} and destination file: {file2}\n")
             os.symlink(file1, file2)
-            print (f"--- force is {force}, -----------------creating success -----------------------\n")
+            logger.ino("\n"
+                       +f"--- force is {force}, -----------------creating success -----------------------\n")
         # if raise [erron 2]: file not exist, print the error and pass
         except OSError as n:
             if n.errno == 2:
-                print("*********** input files are missing, please check *****************\n")
+                logger.error("\n"
+                             +"***An error occured \n" 
+                             +"input files are missing, please check \n")
+                pass
             # if raise [erron 17] the symlink exist, we don't force and print that we keep the original one
             elif n.errno == errno.EEXIST:
-                print (f"--- force is {force}, symlink exist, remain old \n")
+                logger.error("\n"+ 
+                           f"--- force is {force}, symlink exist, remain old \n")
             else:
+                logger.error("\n"+ "Unknow error, break the program")
                 raise n
     # if we force to overwrite
     if force:
         try:
             # try the command, if the file are correct and symlink not exist, it will create one
             os.symlink(file1, file2)
-            print (f"--- force is {force}, symlink empty, newlink created successfully\n ")
+            logger.ino("\n"
+                       +f"--- force is {force}, symlink empty, newlink created successfully\n ")
         # if the symlink exist, and in this case we force a overwrite
         except OSError as e:
             if e.errno == errno.EEXIST:
                 os.remove(file2)
-                print(f"--- force is {force}, symlink exist, unlink\n ")
+                logger.ino("\n"
+                           +f"--- force is {force}, symlink exist, unlink\n ")
                 os.symlink(file1, file2)
-                print("--- overwrite the exsting symlink")
-                print("-----------------Overwrite success -----------------------\n")
+                logger.ino("\n"
+                           +"--- overwrite the exsting symlink")
+                logger.ino("\n"
+                           +"-----------------Overwrite success -----------------------\n")
             elif e.errno == 2:
-                print("*********** input files are missing, please check *****************\n")
+                logger.error("\n"
+                             +"***input files are missing, please check\n")
                 raise e
             else:
-                print("***********************ERROR*******************\nWe don't know what happened\n")
+                logger.ino("\n"
+                           +"***ERROR***\n"
+                           +"We don't know what happened\n")
                 raise e
-    print("-----------------------------------------------\n")
+    logger.ino("\n"
+               +"-----------------------------------------------\n")
     return
 
 
@@ -109,7 +127,8 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     new_container_specific_config_path=[]
     # if we run freesurfer before:
     if pre_fs:
-        print(f"########\n the sourceT1 file will be pre_fs\n#########\n")
+        logger.ino("\n"
+                   +f"########\n the sourceT1 file will be pre_fs\n#########\n")
         srcAnatPath = os.path.join(
             basedir,
             "nifti",
@@ -123,30 +142,32 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
         zips = sorted(
             glob.glob(os.path.join(srcAnatPath, prefs_zipname + "*")), key=os.path.getmtime
         )
-        print(f"---the len of the zip file list is {len(zips)}\n")
+        logger.ino("\n"
+                   +f"---the len of the zip file list is {len(zips)}\n")
         if len(zips) == 0:
-            print(
+            logger.ino("\n"+
                 f"There are no {prefs_zipname}.zip in {srcAnatPath}, we will listed potential zip file for you"
             )
             zips_new = sorted(glob.glob(os.path.join(srcAnatPath, "*")), key=os.path.getmtime)
             if len(zips_new) == 0:
-                print(
+                logger.error("\n"+
                     f"The {srcAnatPath} directory is empty, aborting, please check the output file of previous analysis."
                 )
-                sys.exit()
+                raise FileNotFoundError("srcAnatPath is empty, no previous analysis was found")
             else:
-                print()
                 answer = input(
                     f"Do you want to use the file: \n{zips_new[-1]} \n we get for you? \n input y for yes, n for no"
                 )
                 if answer in "y":
                     srcFileT1 = zips_new[-1]
                 else:
-                    print(zips_new)
-                    print("no target preanalysis.zip file exist, please check the config_lc.yaml file")
-                    sys.exit()
+                    logger.error("\n"+"An error occured"
+                               +zips_new +"\n"
+                               +"no target preanalysis.zip file exist, please check the config_lc.yaml file")
+                    sys.exit(1)
         elif len(zips) > 1:
-            print(f"There are more than one zip file in {srcAnatPath}, selecting the lastest one")
+            logger.ino("\n"
+                       +f"There are more than one zip file in {srcAnatPath}, selecting the lastest one")
             srcFileT1 = zips[-1]
         else:
             srcFileT1 = zips[0]
@@ -198,26 +219,32 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
             os.makedirs(os.path.join(dstdstDir_input, "anat"))
     if annotfile:
         if os.path.isfile(annotfile):
-            print("Passed " + annotfile + ", copying to " + Dir_analysis)
+            logger.ino("\n"
+                       +"Passed " + annotfile + ", copying to " + Dir_analysis)
             srcFileAnnot = os.path.join(Dir_analysis, "annotfile.zip")
             if os.path.isfile(srcFileAnnot):
-                print(srcFileAnnot + " exists, if you want it new, delete it first")
+                logger.ino("\n"
+                           +srcFileAnnot + " exists, if you want it new, delete it first")
             else:
                 shutil.copyfile(annotfile, os.path.join(Dir_analysis, "annotfile.zip"))
         else:
-            print(annotfile + " does not exist")
+            logger.ino("\n"
+                       +annotfile + " does not exist")
         if not os.path.exists(os.path.join(dstdstDir_input, "annotfile")):
             os.makedirs(os.path.join(dstdstDir_input, "annotfile"))
     if mniroizip:
         if os.path.isfile(mniroizip):
-            print("Passed " + mniroizip + ", copying to " + Dir_analysis)
+            logger.ino("\n"
+                       +"Passed " + mniroizip + ", copying to " + Dir_analysis)
             srcFileMiniroizip = os.path.join(Dir_analysis, "mniroizip.zip")
             if os.path.isfile(srcFileMiniroizip):
-                print(srcFileMiniroizip + " exists, if you want it new, delete it first")
+                logger.ino("\n"+
+                           srcFileMiniroizip + " exists, if you want it new, delete it first")
             else:
                 shutil.copyfile(mniroizip, os.path.join(Dir_analysis, "mniroizip.zip"))
         else:
-            print(mniroizip + " does not exist")
+            logger.ino("\n"
+                       +mniroizip + " does not exist")
         if not os.path.exists(os.path.join(dstdstDir_input, "mniroizip")):
             os.makedirs(os.path.join(dstdstDir_input, "mniroizip"))
 
@@ -243,7 +270,8 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     # Create the symbolic links
     
     force_symlink(srcFileT1, dstFileT1, force)
-    print("-----------------The symlink created-----------------------\n")
+    logger.ino("\n"
+               +"-----------------The symlink created-----------------------\n")
     if annotfile:
         force_symlink(srcFileAnnot, dstFileAnnot, force)
     if mniroizip:
@@ -325,12 +353,15 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     if len(dwi_dir) > 1:
         dwi_acq = [f for f in dwi_dir if 'acq-' in f]
         if len(dwi_acq) == 0:
-            print(f"No files with different acq- to concatenate.\n")
+            logger.ino("\n"
+                       +f"No files with different acq- to concatenate.\n")
         elif len(dwi_acq) == 1:
-            print(f"Found only {dwi_acq[0]} to concatenate. There must be at least two files with different acq.\n")
+            logger.ino("\n"
+                       +f"Found only {dwi_acq[0]} to concatenate. There must be at least two files with different acq.\n")
         elif len(dwi_acq) > 1:
             if not os.path.isfile(srcFileDwi_nii):
-                print(f"Concatenating with mrcat of mrtrix3 these files: {dwi_acq} in: {srcFileDwi_nii} \n")
+                logger.ino("\n"
+                           +f"Concatenating with mrcat of mrtrix3 these files: {dwi_acq} in: {srcFileDwi_nii} \n")
                 dwi_acq.sort()
                 sp.run(['mrcat',*dwi_acq,srcFileDwi_nii])
             # also get the bvecs and bvals
@@ -346,7 +377,8 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
                 bval_cmd = bval_cmd+" > "+srcFileDwi_bval
                 sp.run(bval_cmd,shell=True)
             else:
-                print("Missing bval files")
+                logger.ino("\n"
+                           +"Missing bval files")
             if len(dwi_acq) == len(bvecs_acq) and not os.path.isfile(srcFileDwi_bvec):
                 bvecs_acq.sort()
                 bvec_cmd = "paste -d ' '"
@@ -355,7 +387,8 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
                 bvec_cmd = bvec_cmd+" > "+srcFileDwi_bvec
                 sp.run(bvec_cmd,shell=True)
             else:
-                print("Missing bvec files")
+                logger.ino("\n"
+                           +"Missing bvec files")
     # check_create_bvec_bval（force) one of the todo here
     if rpe:
         if pe_dir == "PA":
@@ -473,12 +506,14 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     force_symlink(srcFileDwi_nii, dstFileDwi_nii, force)
     force_symlink(srcFileDwi_bval, dstFileDwi_bval, force)
     force_symlink(srcFileDwi_bvec, dstFileDwi_bvec, force)
-    print("-----------------The rtppreproc symlinks created\n")
+    logger.ino("\n"
+               +"-----------------The rtppreproc symlinks created\n")
     if rpe:
         force_symlink(srcFileDwi_nii_R, dstFileDwi_nii_R, force)
         force_symlink(srcFileDwi_bval_R, dstFileDwi_bval_R, force)
         force_symlink(srcFileDwi_bvec_R, dstFileDwi_bvec_R, force)
-        print("---------------The rtppreproc rpe=True symlinks created")
+        logger.ino("\n"
+                   +"---------------The rtppreproc rpe=True symlinks created")
     return new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path
 
 
@@ -611,7 +646,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     dstFile_tractparams = os.path.join(Dir_analysis, "tractparams.csv")
     copy_file(srcFile_tractparams, dstFile_tractparams,force)
     new_container_specific_config_path.append(dstFile_tractparams)
-    tractparam_df =_read_df(dstFile_tractparams)
+    tractparam_df =read_df(dstFile_tractparams)
     check_tractparam(lc_config, sub, ses, tractparam_df)
 
 
@@ -622,6 +657,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     force_symlink(srcFileDwi_bvec, dstDwi_bvecFile, force)
     force_symlink(srcFileDwi_bvals, dstDwi_bvalFile, force)
     force_symlink(dstFile_tractparams, dst_tractparams, force)
-    print("-----------------The rtppipeline symlinks created\n")
+    logger.ino("\n"
+               +"-----------------The rtppipeline symlinks created\n")
     return new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path
     

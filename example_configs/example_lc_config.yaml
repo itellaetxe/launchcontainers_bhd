@@ -54,29 +54,10 @@ general:
   basedir: /scratch/llecca/devtrajtract/DATA/BERTSOLARI
   containerdir: /scratch/llecca/containers
   container: "anatrois"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
-  analysis: "02"
+  analysis: "03"
   force: false
   host: BCBL #valid options: local, BCBL, DIPC.
-
-# not implemented yet, thinking how to do it.
-  prepare_mode: true
-  # if it's true, then do creat symlinks but don't send the jobs
-  # if it's false 
-  print_command_only: only print the command, do nothing
-  
-  # do nothing, and print in the screen what you are going to send
-  qsub: true
-  # Set this to true to just show the text of what it is going to launch
-  # If this is set to true, it will not launch anything, it will only throw the text with the commands that will be launch
-  # For testing only
-  # TODO: implement this option
-  # note for tiger: in the sh you did for heudiconv, this would be as
-  # echo $CMD
-  # if text_only=false: eval $CMD
-  # cmd="do this and this"
-  # print(cmd)
-  # if not text_only: subprocess.run(cmd,shell=True)
-  
+  print_command_only: true
    
 container_specific:
 # Add the containers and options you want to run

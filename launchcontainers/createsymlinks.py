@@ -6,7 +6,8 @@ import shutil
 import nibabel as nib
 import json
 import subprocess as sp
-from utils import read_df, check_tractparam, copy_file
+from utils import read_df, copy_file 
+import zipfile
 import logging
 
 logger=logging.getLogger("GENERAL")
@@ -87,7 +88,71 @@ def force_symlink(file1, file2, force):
     logger.info("\n"
                +"-----------------------------------------------\n")
     return
+#%% check if tractparam ROI was created in the anatrois fs.zip file
+def check_tractparam(lc_config, sub, ses, tractparam_df):
+    """
 
+        Parameters
+        ----------
+        lc_config : dict
+             the config info about lc
+        sub : str
+        ses: str
+        tractparam_df : dataframe
+
+            inherited parameters: path to the fs.zip file
+                defined by lc_config, sub, ses
+        Returns
+        -------
+        None.
+    """
+    # Define the list of required ROIs
+    logger.info("\n"+
+                "#####################################################\n")
+    required_rois=set()
+    for col in ['roi1', 'roi2', 'roi3', 'roi4',"roiexc1","roiexc2"]:
+        for val in tractparam_df[col][~tractparam_df[col].isna()].unique():
+            if val != "NO":
+                required_rois.add(val)
+
+    # Define the zip file
+    basedir = lc_config["general"]["basedir"]
+    container = lc_config["general"]["container"]
+    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
+    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+    fs_zip = os.path.join(
+        basedir,
+        "nifti",
+        "derivatives",
+        precontainerfs,
+        "analysis-" + preanalysisfs,
+        "sub-" + sub,
+        "ses-" + ses,
+        "output", "fs.zip"
+    )
+    # Extract .gz files from zip file and check if they are all present
+    with zipfile.ZipFile(fs_zip, 'r') as zip:
+        zip_gz_files = set(zip.namelist())
+    required_gz_files = set(f"fs/ROIs/{file}.nii.gz" for file in required_rois)
+    logger.info("\n"
+                +f"---The following are the ROIs in fs.zip file: \n {zip_gz_files} \n"
+                +f"---there are {len(zip_gz_files)} .nii.gz files in fs.zip from anarois output\n"
+                +f"---There are {len(required_gz_files)} ROIs that are required to run RTP-PIPELINE\n")
+    if required_gz_files.issubset(zip_gz_files):
+        logger.info("\n"
+                +"---checked! All required .gz files are present in the fs.zip \n")
+    else:
+        missing_files = required_gz_files - zip_gz_files
+        logger.error("\n"
+                     +f"*****Error: \n"
+                     +f"there are {len(missing_files)} missed in fs.zip \n"
+                     +f"The following .gz files are missing in the zip file:\n {missing_files}")
+        raise FileNotFoundError("Required .gz file are missing")
+    
+    ROIs_are_there= required_gz_files.issubset(zip_gz_files)
+    logger.info("\n"+
+                "#####################################################\n")
+    return ROIs_are_there
 
 #%%
 def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_specific_config_path,run_lc):

@@ -3,8 +3,7 @@ from os.path import expanduser, join
 from dask import config
 from dask.distributed import Client, LocalCluster
 from dask_jobqueue import SGECluster, SLURMCluster
-from dask.distributed import progress
-import logging
+
 
 logger = logging.getLogger("GENERAL")
 def initiate_cluster(jobqueue_config, n_job):

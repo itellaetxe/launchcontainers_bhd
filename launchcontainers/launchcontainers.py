@@ -302,6 +302,28 @@ def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path,
 
 # %% launchcontainers
 
+def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename):
+    if "BCBL" in host:
+        cmd=f"singularity run -e --no-home "\
+            f"--bind /bcbl:/bcbl "\
+            f"--bind /tmp:/tmp "\
+            f"--bind /export:/export "\
+            f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+            f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+            f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+            f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+    elif "DIPC" in host:
+        cmd=f"singularity run -e --no-home "\
+            f"--bind /scratch:/scratch "\
+            f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+            f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+            f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+            f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+
+    return(sp.run(cmd,shell=True))#,pure=False))
+
+
+
 def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path):
     """
     This function launches containers generically in different Docker/Singularity HPCs
@@ -340,7 +362,12 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
     client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
     print("\n~~~~this is the cluster and client\n")
     print(f"{client} \n cluster: {cluster} \n")
-    futures=[]
+    #futures=[]
+    hosts = []
+    paths2subs_derivatives = []
+    paths2configs_json = []
+    sifpaths = []
+    logfilenames = []
 
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
@@ -403,43 +430,31 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
             backup_config_yaml = os.path.join(backup_configs, "config_lc.yaml")
             backup_subSesList = os.path.join(backup_configs, "subSesList.txt")
 
-            if "BCBL" in host:
-                cmd=f"singularity run -e --no-home "\
-                    f"--bind /bcbl:/bcbl "\
-                    f"--bind /tmp:/tmp "\
-                    f"--bind /export:/export "\
-                    f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
-                    f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                    f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
-                    f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
-            elif "DIPC" in host:
-                cmd=f"singularity run -e --no-home "\
-                    f"--bind /scratch:/scratch "\
-                    f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
-                    f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                    f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
-                    f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
-
             if run_it:
-                futures.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
+                hosts.append(host)
+                paths2subs_derivatives.append(path_to_sub_derivatives)
+                paths2configs_json.append(path_to_config_json)
+                sifpaths.append(sif_path)
+                logfilenames.append(logfilename)
                 copy_file(path_to_config_json,backup_config_json,force)
                 copy_file(path_to_config_yaml, backup_config_yaml, force)
                 copy_file(path_to_subSesList, backup_subSesList, force)
 
             else:
-                print(f"--------run_lc is false, if True, we would launch this command: \n" \
-                      f"--------{cmd}\n")
+#                print(f"--------run_lc is false, if True, we would launch this command: \n" \
+#                      f"--------{cmd}\n")
                 print(f"-------The cluster job_scipt is  {cluster.job_script()} \n")
                 print("-----please check if the job_script is properlly defined and then starting run_lc \n")
     
     if run_it:
-        print(futures)
         print('##########')
-        results = client.compute(futures)
-        progress(results)
+        futures = client.map(cmdrun,hosts,paths2subs_derivatives,paths2configs_json,sifpaths,logfilenames)
+        print(futures)
+        print(f"{client} \n cluster: {cluster} \n")
+        progress(futures)
+        results = client.gather(futures)
         print(results)
         print('###########')
-        results = client.gather(results)
         print(results)
         print('###########')
         print("333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\n")
@@ -460,7 +475,6 @@ def main():
     container_specific_config_path = inputs["container_specific_config"]
     run_lc = inputs["run_lc"]
     
-
     new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path=prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path,container_specific_config_path,run_lc)
     
     new_lc_config=_read_config(new_lc_config_path)

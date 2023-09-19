@@ -1,18 +1,13 @@
 import logging
 from os.path import expanduser, join
-
-import yaml
 from dask import config
-from dask.distributed import Client
-from dask_jobqueue import PBSCluster, SGECluster, SLURMCluster
-LGR = logging.getLogger("GENERAL")
-from dask.distributed import progress
+from dask.distributed import Client, LocalCluster
+from dask_jobqueue import SGECluster, SLURMCluster
 
 
+logger = logging.getLogger("GENERAL")
 def initiate_cluster(jobqueue_config, n_job):
     '''
-    
-
     Parameters
     ----------
     jobqueue_config : dictionary
@@ -67,9 +62,6 @@ def initiate_cluster(jobqueue_config, n_job):
                                        #job_extra_directives=job_extra_directives)
         cluster_by_config.scale(jobs=n_job)
 
-    elif "pbs" in jobqueue_config["manager"]:
-        cluster_by_config = PBSCluster(cores = cores, memory = memory)
-        cluster_by_config.scale(jobs=n_job)
     elif "slurm" in jobqueue_config["manager"]:
         envextra = [f"module load {jobqueue_config['sin_ver']} ",\
                     f"export SINGULARITYENV_TMPDIR={jobqueue_config['tmpdir']}",\
@@ -85,8 +77,10 @@ def initiate_cluster(jobqueue_config, n_job):
                                          walltime=jobqueue_config["walltime"],
                                          job_extra_directives = ["--export=ALL"])
         cluster_by_config.scale(jobs=n_job)
+    elif "local" in jobqueue_config["manager"]:
+        cluster_by_config=LocalCluster()
     else:
-        LGR.warning(
+        logger.warning(
             "dask configuration wasn't detected, "
             "if you are using a cluster please look at "
             "the jobqueue YAML example, modify it so it works in your cluster "
@@ -103,10 +97,8 @@ def initiate_cluster(jobqueue_config, n_job):
 
 
 def dask_scheduler(jobqueue_config, n_job):
-    print("----------------------is jobqueue_config None? \n")
-    print(f"--------------------it is {jobqueue_config is None}")
     if jobqueue_config is None:
-        LGR.warning(
+        logger.warning(
             "dask configuration wasn't detected, "
             "if you are using a cluster please look at "
             "the jobqueue YAML example, modify it so it works in your cluster "
@@ -117,9 +109,7 @@ def dask_scheduler(jobqueue_config, n_job):
         cluster = None
     else:
         cluster = initiate_cluster(jobqueue_config, n_job)
-        #print(f"------------!!!!!!!!!!!right after cluster was defined, what is cluster? \n {cluster}")
-   # print("----------------cluster should be defined here")
-   # print(f"--------------outside of the if-else loop, what is our cluster? \n----{cluster}")
+
     client = None if cluster is None else Client(cluster)
    
     return client, cluster

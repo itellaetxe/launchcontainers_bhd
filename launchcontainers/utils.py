@@ -76,6 +76,11 @@ def get_parser():
         action="store_true",
         help="if you want to open verbose mode, type -v or --verbose, other wise the program is non-verbose mode",
                          )
+    parser.add_argument(
+        "--DEBUG",
+        action="store_true",
+        help="if you want to find out what is happening of particular step, this will print you more detailed information",
+                         )    
     
     parse_dict = vars(parser.parse_args())
     parse_namespace= parser.parse_args()

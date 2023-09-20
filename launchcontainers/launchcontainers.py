@@ -17,7 +17,6 @@ logger=logging.getLogger("GENERAL")
 
 
 # %% launchcontainers
-
 def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it):
     if "BCBL" in host:
         cmdcmd=f"singularity run -e --no-home "\
@@ -46,13 +45,13 @@ def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename
         sp.run(cmdcmd,shell=True)
     else:
         pass
+    
     if cmdcmd is None:
-        logging.error("\n"+ f'the cmd command is not assigned, please check your config.yaml[general][host] session')
+        logging.error("\n"+ f'the cmd command is not assigned, please check your config.yaml[general][host] session\n')
         raise ValueError('cmd is not defiend, aborting')
     return cmdcmd
 
-
-
+#%% the launchcontainer
 def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path):
     """
     This function launches containers generically in different Docker/Singularity HPCs
@@ -167,22 +166,32 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
             sif_paths.append(sif_path)
             logfilenames.append(logfilename)
             run_its.append(run_it)
-            
-            
-            if run_it:                
+            a=0
+            logger.debug(a)
+            logger.debug(hosts)
+            logger.debug(paths_to_configs_json)
+            a=a+1
+            if run_it: 
+
                 #future_for_print.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
+                
                 do.copy_file(path_to_config_json,backup_config_json,force)
                 do.copy_file(path_to_config_yaml, backup_config_yaml, force)
                 do.copy_file(path_to_subSesList, backup_subSesList, force)
+                logging.warning("\n"
+                             +f"start copying all the config files to {backup_configs} folder")
             
-            else:
+            print('\n'+ f"this is {run_it}\n this is {run_its}\n\n")
+            
+            if not run_it:
                 # this cmd is only for print the command 
                 command= cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it)
+                print(f"\ncommand\n")
                 logger.critical("\n"
                                 +f"--------run_lc is false, if True, we would launch this command: \n"
                                 +f"\n"
                                 +f"{command}\n\n"
-                                +"Please check if the job_script is properlly defined and then starting run_lc \n")
+                                +"Please check if the job_script is properlly defined and then starting run_lc \n") 
     
     if run_it:
         futures = client.map(cmdrun,hosts,paths_to_subs_derivatives,paths_to_configs_json,sif_paths,logfilenames,run_its)

@@ -332,6 +332,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
     copy_file(srcFile_container_config_json, dstFilecontainer_config,force)
     new_container_specific_config_path.append(dstFilecontainer_config)
+    
     # Create the symbolic links
     
     force_symlink(srcFileT1, dstFileT1, force)

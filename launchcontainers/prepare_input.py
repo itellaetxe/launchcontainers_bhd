@@ -35,8 +35,8 @@ def prepare_input_files(lc_config, lc_config_path, df_subSes, sub_ses_list_path,
                     +"The current run is: \n"
                     +f"{sub}_{ses}_RUN-{RUN}_{container}_{version}\n")
         
-        if RUN == "True":
-            if container_specific_config_path is None:
+        if RUN == "True" and dwi == "True":
+            if container_specific_config_path is None or len(container_specific_config_path)==0:
                 logging.error("\n"
                               +f"Input file error: the containerspecific config is not provided")
                 raise FileNotFoundError("Didn't input container_specific_config, please indicate it in your commandline flag -cc")

@@ -53,7 +53,7 @@ def force_symlink(file1, file2, force):
                 pass
             # if raise [erron 17] the symlink exist, we don't force and print that we keep the original one
             elif n.errno == errno.EEXIST:
-                logger.error("\n"+ 
+                logger.warning("\n"+ 
                            f"--- force is {force}, symlink exist, remain old \n")
             else:
                 logger.error("\n"+ "Unknow error, break the program")
@@ -72,7 +72,7 @@ def force_symlink(file1, file2, force):
                 logger.info("\n"
                            +f"--- force is {force}, symlink exist, unlink\n ")
                 os.symlink(file1, file2)
-                logger.info("\n"
+                logger.warning("\n"
                            +"--- overwrite the exsting symlink")
                 logger.info("\n"
                            +"-----------------Overwrite success -----------------------\n")
@@ -81,7 +81,7 @@ def force_symlink(file1, file2, force):
                              +"***input files are missing, please check\n")
                 raise e
             else:
-                logger.info("\n"
+                logger.error("\n"
                            +"***ERROR***\n"
                            +"We don't know what happened\n")
                 raise e
@@ -210,7 +210,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
         logger.info("\n"
                    +f"---the len of the zip file list is {len(zips)}\n")
         if len(zips) == 0:
-            logger.info("\n"+
+            logger.warning("\n"+
                 f"There are no {prefs_zipname}.zip in {srcAnatPath}, we will listed potential zip file for you"
             )
             zips_new = sorted(glob.glob(os.path.join(srcAnatPath, "*")), key=os.path.getmtime)
@@ -303,12 +303,12 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
                        +"Passed " + mniroizip + ", copying to " + Dir_analysis)
             srcFileMiniroizip = os.path.join(Dir_analysis, "mniroizip.zip")
             if os.path.isfile(srcFileMiniroizip):
-                logger.info("\n"+
+                logger.warning("\n"+
                            srcFileMiniroizip + " exists, if you want it new, delete it first")
             else:
                 shutil.copyfile(mniroizip, os.path.join(Dir_analysis, "mniroizip.zip"))
         else:
-            logger.info("\n"
+            logger.warning("\n"
                        +mniroizip + " does not exist")
         if not os.path.exists(os.path.join(dstdstDir_input, "mniroizip")):
             os.makedirs(os.path.join(dstdstDir_input, "mniroizip"))
@@ -418,10 +418,10 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     if len(dwi_dir) > 1:
         dwi_acq = [f for f in dwi_dir if 'acq-' in f]
         if len(dwi_acq) == 0:
-            logger.info("\n"
+            logger.warning("\n"
                        +f"No files with different acq- to concatenate.\n")
         elif len(dwi_acq) == 1:
-            logger.info("\n"
+            logger.warning("\n"
                        +f"Found only {dwi_acq[0]} to concatenate. There must be at least two files with different acq.\n")
         elif len(dwi_acq) > 1:
             if not os.path.isfile(srcFileDwi_nii):
@@ -442,7 +442,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
                 bval_cmd = bval_cmd+" > "+srcFileDwi_bval
                 sp.run(bval_cmd,shell=True)
             else:
-                logger.info("\n"
+                logger.warning("\n"
                            +"Missing bval files")
             if len(dwi_acq) == len(bvecs_acq) and not os.path.isfile(srcFileDwi_bvec):
                 bvecs_acq.sort()
@@ -452,7 +452,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
                 bvec_cmd = bvec_cmd+" > "+srcFileDwi_bvec
                 sp.run(bvec_cmd,shell=True)
             else:
-                logger.info("\n"
+                logger.warning("\n"
                            +"Missing bvec files")
     # check_create_bvec_bval（force) one of the todo here
     if rpe:

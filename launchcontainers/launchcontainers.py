@@ -18,9 +18,9 @@ logger=logging.getLogger("GENERAL")
 
 # %% launchcontainers
 
-def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename):
+def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it):
     if "BCBL" in host:
-        cmd=f"singularity run -e --no-home "\
+        cmdcmd=f"singularity run -e --no-home "\
             f"--bind /bcbl:/bcbl "\
             f"--bind /tmp:/tmp "\
             f"--bind /export:/export "\
@@ -29,15 +29,27 @@ def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename
             f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
             f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
     elif "DIPC" in host:
-        cmd=f"singularity run -e --no-home "\
+        cmdcmd=f"singularity run -e --no-home "\
             f"--bind /scratch:/scratch "\
             f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
             f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
             f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
             f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
-
-    sp.run(cmd,shell=True)
-    return cmd
+    elif "local" in host:
+        cmdcmd=f"singularity run -e --no-home "\
+            f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+            f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+            f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+            f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+    
+    if run_it:
+        sp.run(cmdcmd,shell=True)
+    else:
+        pass
+    if cmdcmd is None:
+        logging.error("\n"+ f'the cmd command is not assigned, please check your config.yaml[general][host] session')
+        raise ValueError('cmd is not defiend, aborting')
+    return cmdcmd
 
 
 
@@ -86,7 +98,8 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
     paths_to_configs_json = []
     sif_paths = []
     logfilenames = []
-    future_for_print=[]
+    run_its=[]
+    #future_for_print=[]
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
         ses  = row.ses
@@ -153,9 +166,8 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
             paths_to_configs_json.append(path_to_config_json)
             sif_paths.append(sif_path)
             logfilenames.append(logfilename)
+            run_its.append(run_it)
             
-            # this cmd is only for print the command 
-            cmd= cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename)
             
             if run_it:                
                 #future_for_print.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
@@ -164,14 +176,16 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
                 do.copy_file(path_to_subSesList, backup_subSesList, force)
             
             else:
+                # this cmd is only for print the command 
+                command= cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it)
                 logger.critical("\n"
                                 +f"--------run_lc is false, if True, we would launch this command: \n"
                                 +f"\n"
-                                +f"{cmd}\n\n"
+                                +f"{command}\n\n"
                                 +"Please check if the job_script is properlly defined and then starting run_lc \n")
     
     if run_it:
-        futures = client.map(cmdrun,hosts,paths_to_subs_derivatives,paths_to_configs_json,sif_paths,logfilenames)
+        futures = client.map(cmdrun,hosts,paths_to_subs_derivatives,paths_to_configs_json,sif_paths,logfilenames,run_its)
         progress(futures)
         results = client.gather(futures)
         logger.ino(results)

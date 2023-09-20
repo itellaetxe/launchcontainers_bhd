@@ -69,8 +69,6 @@ def get_parser():
                         all the input files for you and print the command you want to send to container, after you \
                         check all the configurations are correct and ready, you type --run_lc to make it run"
                         )
-    parser.add_argument('--not_run_lc', dest='run_lc', action='store_false')
-    #parser.set_defaults(run_lc=False)
     
     parser.add_argument(
         "-v",
@@ -148,6 +146,7 @@ def setup_logger():
     handler.setFormatter(formatter)
     # add handler to logger
     logger.addHandler(handler)
+    logger.setLevel(logging.WARNING)
 
     return logger
 #%% copy file
@@ -159,7 +158,7 @@ def copy_file(src_file, dst_file, force):
         raise FileExistsError("the source file is not here")
     
     logger.info("\n"+
-                f"---start copying {src_file} to {os.path.dirname(dst_file)} \n")
+                f"---start copying {src_file} to {dst_file} \n")
     try:
         if ((not os.path.isfile(dst_file)) or (force)) or (os.path.isfile(dst_file) and force):
             shutil.copy(src_file, dst_file)

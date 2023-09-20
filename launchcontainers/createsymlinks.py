@@ -175,8 +175,12 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     # define local variables from lc_config dict
     # general level variables:
     basedir = lc_config["general"]["basedir"]
-    container = lc_config["general"]["container"]
-    force = (lc_config["general"]["force"])&(~run_lc)
+    container = lc_config["general"]["container"]    
+    force = (lc_config["general"]["force"])
+    # if force is False, then we don't want to overwrite anything
+    # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
+    # if force is true and we do run_lc, then we will never overwritte
+    force = force and (~run_lc)
     analysis = lc_config["general"]["analysis"]
     # container specific:
     pre_fs = lc_config["container_specific"][container]["pre_fs"]
@@ -190,6 +194,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     
     srcFile_container_config_json= container_specific_config_path[0]
     new_container_specific_config_path=[]
+    
     # if we run freesurfer before:
     if pre_fs:
         logger.info("\n"
@@ -368,7 +373,11 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     # general level variables:
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"]
-    force = (lc_config["general"]["force"])&(~run_lc)
+    force = (lc_config["general"]["force"])
+    # if force is False, then we don't want to overwrite anything
+    # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
+    # if force is true and we do run_lc, then we will never overwritte
+    force=force and (~run_lc)
     analysis = lc_config["general"]["analysis"]
     # container specific:
     precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
@@ -606,7 +615,8 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     # general level variables:
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"]
-    force = (lc_config["general"]["force"])&(~run_lc)
+    force = (lc_config["general"]["force"])
+    force = force and (~run_lc)
     analysis = lc_config["general"]["analysis"]
     # rtppipeline specefic variables
     version = lc_config["container_specific"][container]["version"]

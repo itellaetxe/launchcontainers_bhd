@@ -168,7 +168,7 @@ def copy_file(src_file, dst_file, force):
         if ((not os.path.isfile(dst_file)) or (force)) or (os.path.isfile(dst_file) and force):
             shutil.copy(src_file, dst_file)
             logger.info("\n"+
-                f"---{src_file} has been succesfully copied to derivatives/analysis directory \n"+
+                f"---{src_file} has been succesfully copied to {os.path.dirname(src_file)} directory \n"+
                 f"---REMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
             )
         elif os.path.isfile(dst_file) and not force:

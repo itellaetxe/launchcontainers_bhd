@@ -141,6 +141,7 @@ def launchcontainers(Dir_analysis, lc_config, sub_ses_list, config_under_analysi
                 os.mkdir(logdir)
             if not os.path.isdir(backup_configs):
                 os.mkdir(backup_configs)
+            
             backup_config_json = os.path.join(backup_configs, "config.json")
             backup_config_yaml = os.path.join(backup_configs, "config_lc.yaml")
             backup_subSesList = os.path.join(backup_configs, "subSesList.txt")
@@ -151,18 +152,6 @@ def launchcontainers(Dir_analysis, lc_config, sub_ses_list, config_under_analysi
             sif_paths.append(sif_path)
             logfilenames.append(logfilename)
             run_its.append(run_it)
-
-            if run_it: 
-
-                #future_for_print.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
-                
-                do.copy_file(path_to_config_json,backup_config_json,force)
-                do.copy_file(path_to_config_yaml, backup_config_yaml, force)
-                do.copy_file(path_to_subSesList, backup_subSesList, force)
-                logging.warning("\n"
-                             +f"start copying all the config files to {backup_configs} folder")
-            
-            print('\n'+ f"this is {run_it}\n this is {run_its}\n\n")
             
             if not run_it:
                 # this cmd is only for print the command 
@@ -184,6 +173,13 @@ def launchcontainers(Dir_analysis, lc_config, sub_ses_list, config_under_analysi
         client.close()
         cluster.close()
 
+        do.copy_file(path_to_config_json,backup_config_json,force)
+        do.copy_file(path_to_config_yaml, backup_config_yaml, force)
+        do.copy_file(path_to_subSesList, backup_subSesList, force)
+        logging.info("\n"
+                        +f"copied all the config files to {backup_configs} folder")
+        logging.critical("\n"
+                         + "lanchcontainer finished, all the jobs are done")
     return
 
 # %% main()

@@ -2,10 +2,10 @@ import logging
 import createsymlinks as csl
 import os
 import filecmp
-logger=logging.getLogger("GENERAL")
 import utils as do
 
 
+logger=logging.getLogger("GENERAL")
 #%% copy configs or create new analysis
 def prepare_analysis_folder(parser_namespace, lc_config):
     '''
@@ -46,6 +46,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         f"{container}_{version}",
         f"analysis-{analysis_num:02d}",
                 )
+        
         analysis_num += 1
         # Naming the potential exist config files
         path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
@@ -58,11 +59,13 @@ def prepare_analysis_folder(parser_namespace, lc_config):
 
 
         if os.path.isdir(Dir_analysis):
+            found_analysis_dir=True
+            
             if all_copies_present:
                 # compare if all the diles are the same
                 general_input= lc_config["general"]
                 container_input=lc_config["container_specific"][container]
-                host_input= lc_config[host]
+                host_input= host
 
                 lc_config_copy=do.read_yaml(path_to_analysis_lc_config)
                 container_ana= lc_config_copy['general']['container']
@@ -70,7 +73,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
                 
                 general_copy= lc_config_copy["general"]
                 container_copy=lc_config_copy["container_specific"][container_ana]
-                host_copy= lc_config_copy[host_ana]
+                host_copy= host_ana
                 
                 
                 compare_config_yaml= (general_input==general_copy) and (container_input==container_copy) and (host_input==host_copy)
@@ -79,31 +82,35 @@ def prepare_analysis_folder(parser_namespace, lc_config):
                                     for orig, copy in zip(original_files[1:], copies[1:])) and compare_config_yaml
                 # if the config info are all the same, we didn't create new analysis folder
                 if are_they_same:
-                    logging.warning("\n"
+                    logger.warning("\n"
                                     + f"the config files in {Dir_analysis} are the same as your input, remain old filesif you are confident to run, type --run_lc flag")
                     #we found the same one so we are not going to make new analysis
-                    found_analysis_dir=True
+                    pass
                 else:
-                    logging.info(("\n"
-                                + f"the config files in {Dir_analysis} are NOT the same as your input create new analysis folder"))
-                   
-                    Dir_analysis = os.path.join(basedir, "nifti", "derivatives",
-                                                f"{container}_{version}", f"analysis-{analysis_num:02d}")
-                    os.mkdir(Dir_analysis)
+                    logger.info("\n"
+                                + f"the config files in {Dir_analysis} are NOT the same as your input create new analysis folder"
+                                + f"going to create analysis {analysis_num:02}")
 
-            else:
-                logging.info(("\n"
-                            + f"some of the config files in {Dir_analysis} missing, create a new one "))
-                Dir_analysis = os.path.join(basedir, "nifti", "derivatives",
-                                            f"{container}_{version}", f"analysis-{analysis_num:02d}")
-                os.mkdir(Dir_analysis)
+
+            if not all_copies_present:
+                logger.info(("\n"
+                            + f"some of the config files in {Dir_analysis} missing, create a new one {analysis_num:02}"))
+
                 
         # if it is not exit, we are doing new analysis, so we just create the analysis folder as it indicate in the config.yaml
-        else:
-            logging.info("\n"
-                        + f"the {Dir_analysis} are not exist, making the analysis folder")
-            os.mkdir(Dir_analysis)
-    
+        if not os.path.isdir(Dir_analysis):
+            logger.info("\n"
+                        + f"the {Dir_analysis} are not exist, making the analysis folder {analysis_num:02}")
+
+    Dir_analysis = os.path.join(
+        basedir,
+        "nifti",
+        "derivatives",
+        f"{container}_{version}",
+        f"analysis-{analysis_num:02d}",
+                )
+        
+        
     return  Dir_analysis
 # %% prepare_input_files
 def prepare_input_files(parser_namespace, lc_config, df_subSes):
@@ -127,12 +134,11 @@ def prepare_input_files(parser_namespace, lc_config, df_subSes):
     
     container = lc_config["general"]["container"]
     version = lc_config["container_specific"][container]["version"]
-    run_lc = parser_namespace.run_lc
     Dir_analysis = prepare_analysis_folder(parser_namespace, lc_config)
     
     # first thing, if the container specific config is not correct, then not doing anything
-    if len(parser_namespace.container_specific_config_path)==0:
-                logging.error("\n"
+    if len(parser_namespace.container_specific_config)==0:
+                logger.error("\n"
                               +f"Input file error: the containerspecific config is not provided")
                 raise FileNotFoundError("Didn't input container_specific_config, please indicate it in your commandline flag -cc")
     
@@ -153,7 +159,7 @@ def prepare_input_files(parser_namespace, lc_config, df_subSes):
             elif "rtp-pipeline" in container:
                 
                 if not len(parser_namespace.container_specific_config_path) == 2:
-                    logging.error("\n"
+                    logger.error("\n"
                               +f"Input file error: the RTP-PIPELINE config is not provided completely")
                     raise FileNotFoundError('The RTP-PIPELINE needs the config.json and tratparams.csv as container specific configs')
                 

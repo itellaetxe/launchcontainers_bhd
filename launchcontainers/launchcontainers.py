@@ -47,7 +47,7 @@ def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename
         pass
     
     if cmdcmd is None:
-        logging.error("\n"+ f'the cmd command is not assigned, please check your config.yaml[general][host] session\n')
+        logger.error("\n"+ f'the cmd command is not assigned, please check your config.yaml[general][host] session\n')
         raise ValueError('cmd is not defiend, aborting')
     return cmdcmd
 
@@ -156,7 +156,6 @@ def launchcontainers(Dir_analysis, lc_config, sub_ses_list, config_under_analysi
             if not run_it:
                 # this cmd is only for print the command 
                 command= cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it)
-                print(f"\ncommand\n")
                 logger.critical("\n"
                                 +f"--------run_lc is false, if True, we would launch this command: \n"
                                 +f"\n"
@@ -176,9 +175,9 @@ def launchcontainers(Dir_analysis, lc_config, sub_ses_list, config_under_analysi
         do.copy_file(path_to_config_json,backup_config_json,force)
         do.copy_file(path_to_config_yaml, backup_config_yaml, force)
         do.copy_file(path_to_subSesList, backup_subSesList, force)
-        logging.info("\n"
+        logger.info("\n"
                         +f"copied all the config files to {backup_configs} folder")
-        logging.critical("\n"
+        logger.critical("\n"
                          + "lanchcontainer finished, all the jobs are done")
     return
 
@@ -212,7 +211,7 @@ def main():
     if verbose:
         logger.setLevel(logging.INFO)    
 
-    config_under_analysis, Dir_analysis=prepare.prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path, container_specific_config_path)
+    config_under_analysis, Dir_analysis=prepare.prepare_input_files(parser_namespace, lc_config, sub_ses_list)
     
     new_lc_config=do.read_yaml(config_under_analysis["new_lc_config_path"])
     new_sub_ses_list=do.read_df(config_under_analysis["new_sub_ses_list_path"])

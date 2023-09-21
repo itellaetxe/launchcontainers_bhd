@@ -54,7 +54,6 @@ general:
   basedir: /scratch/llecca/devtrajtract/DATA/BERTSOLARI
   containerdir: /scratch/llecca/containers
   container: "anatrois"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
-  analysis: "03"
   force: false
   host: BCBL #valid options: local, BCBL, DIPC.
   print_command_only: true
@@ -70,9 +69,9 @@ container_specific:
     pre_fs: false
     # If pre_fs is true, it will try to find it using the options below
     # Add the container name and versions used to create the pre_fs
-    precontainerfs: anatrois_4.5.2-7.3.2
+    precontainer_anat: anatrois_4.5.2-7.3.2
     # There can be more than one analysis, give the number of the analysis here
-    preanalysisfs: "01"
+    anat_analysis_num: "01"
     # It will find a zip file in the anatrois output, that starts with this string
     prefs_zipname: "anatrois"
     # These are optional input files. If there is none, leave it empty string
@@ -89,15 +88,15 @@ container_specific:
     # Find where the input files are. It will take the T1 and the brainmask from here
     #
     #this thing was pretoolfs originally
-    precontainerfs: anatrois_4.5.2-7.3.2
-    preanalysisfs: "01"
+    precontainer_anat: anatrois_4.5.2-7.3.2
+    anat_analysis_num: "01"
   rtp-pipeline:
     version: 4.4.1
     # Find where the input files are. It will take the T1 and the brainmask from here        
-    precontainerfs: anatrois_4.2.7-7.1.1
-    preanalysisfs: "01"
-    precontainerpp: rtppreproc_1.2.0-3.0.3
-    preanalysispp: "01"
+    precontainer_anat: anatrois_4.2.7-7.1.1
+    anat_analysis_num: "01"
+    precontainer_preproc: rtppreproc_1.2.0-3.0.3
+    preproc_analysis_num: "01"
     # Porject level tractparams or individual tractparams can be used. 
     # If it is poject level, there should be one tractparams in the analysis-xx folder, and it will crate a symlink in every subjects input folder
     # and if the file is not there, it will throw an error. 

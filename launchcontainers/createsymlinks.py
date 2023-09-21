@@ -11,7 +11,9 @@ import zipfile
 import logging
 
 logger=logging.getLogger("GENERAL")
-#%%
+
+
+#%% the force version of create symlink
 def force_symlink(file1, file2, force):
     """
     Parameters
@@ -110,6 +112,7 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
     logger.info("\n"+
                 "#####################################################\n")
     required_rois=set()
+    
     for col in ['roi1', 'roi2', 'roi3', 'roi4',"roiexc1","roiexc2"]:
         for val in tractparam_df[col][~tractparam_df[col].isna()].unique():
             if val != "NO":
@@ -118,14 +121,15 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
     # Define the zip file
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"]
-    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+    precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
+    anat_analysis_num = lc_config["container_specific"][container]["anat_analysis_num"]
+    
     fs_zip = os.path.join(
         basedir,
         "nifti",
         "derivatives",
-        precontainerfs,
-        "analysis-" + preanalysisfs,
+        precontainer_anat,
+        "analysis-" + anat_analysis_num,
         "sub-" + sub,
         "ses-" + ses,
         "output", "fs.zip"
@@ -155,11 +159,13 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
     return ROIs_are_there
 
 #%%
-def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_specific_config_path,run_lc):
+def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
 
     """
     Parameters
     ----------
+    parser_namespace : parser obj
+        it stores all the input information from the get parser
     lc_config : dict
         the lc_config dictionary from _read_config
     sub : str
@@ -173,21 +179,28 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
 
     """
     # define local variables from lc_config dict
+    # input from get_parser
+    lc_config_path = parser_namespace.lc_config
+    sub_ses_list_path = parser_namespace.sub_ses_list
+    container_specific_config_path= parser_namespace.container_specific_config
+    run_lc=parser_namespace.run_lc
+    
     # general level variables:
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"]    
+    
+        # if force is False, then we don't want to overwrite anything
+        # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
+        # if force is true and we do run_lc, then we will never overwritte
     force = (lc_config["general"]["force"])
-    # if force is False, then we don't want to overwrite anything
-    # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
-    # if force is true and we do run_lc, then we will never overwritte
     force = force and (~run_lc)
-    analysis = lc_config["general"]["analysis"]
+     
     # container specific:
     pre_fs = lc_config["container_specific"][container]["pre_fs"]
     prefs_zipname = lc_config["container_specific"][container]["prefs_zipname"]
     # I added this line, shall we modify config yaml
-    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+    precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
+    anat_analysis_num = lc_config["container_specific"][container]["anat_analysis_num"]
     annotfile = lc_config["container_specific"][container]["annotfile"]
     mniroizip = lc_config["container_specific"][container]["mniroizip"]
     version = lc_config["container_specific"][container]["version"]
@@ -203,8 +216,8 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
             basedir,
             "nifti",
             "derivatives",
-            precontainerfs,
-            "analysis-" + preanalysisfs,
+            precontainer_anat,
+            "analysis-" + anat_analysis_num,
             "sub-" + sub,
             "ses-" + ses,
             "output",
@@ -254,27 +267,16 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
 
     # define input output folder for this container
     dstdstDir_input = os.path.join(
-        basedir,
-        "nifti",
-        "derivatives",
-        f"{container}_{version}",
-        "analysis-" + analysis,
+        Dir_analysis,
         "sub-" + sub,
         "ses-" + ses,
         "input",
     )
     dstDir_output = os.path.join(
-        basedir,
-        "nifti",
-        "derivatives",
-        f"{container}_{version}",
-        "analysis-" + analysis,
+        Dir_analysis,
         "sub-" + sub,
         "ses-" + ses,
         "output",
-    )
-    Dir_analysis = os.path.join(
-        basedir, "nifti", "derivatives", f"{container}_{version}", "analysis-" + analysis
     )
     # create corresponding folder
     if not os.path.exists(dstdstDir_input):
@@ -302,6 +304,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
                        +annotfile + " does not exist")
         if not os.path.exists(os.path.join(dstdstDir_input, "annotfile")):
             os.makedirs(os.path.join(dstdstDir_input, "annotfile"))
+    # seems not implementd
     if mniroizip:
         if os.path.isfile(mniroizip):
             logger.info("\n"
@@ -338,6 +341,11 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     copy_file(srcFile_container_config_json, dstFilecontainer_config,force)
     new_container_specific_config_path.append(dstFilecontainer_config)
     
+    config_under_analysis= {
+        "new_lc_config_path": new_lc_config_path, 
+        "new_sub_ses_list_path": new_sub_ses_list_path,
+        "new_container_specific_config_path": new_container_specific_config_path }
+
     # Create the symbolic links
     
     force_symlink(srcFileT1, dstFileT1, force)
@@ -348,29 +356,39 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     if mniroizip:
         force_symlink(srcFileMiniroizip, dstFileMniroizip, force)
    
-    return new_lc_config_path, new_sub_ses_list_path,new_container_specific_config_path
+    return config_under_analysis
    
 
 #%%
-def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_specific_config_path,run_lc):
+def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     """
     Parameters
     ----------
+    parser_namespace: parser obj
+        it contains all the input arguement in the parser
+
     lc_config : dict
         the lc_config dictionary from _read_config
     sub : str
         the subject name looping from df_subSes
     ses : str
         the session name looping from df_subSes.
-    container_specific_config_path : list
-        the path to the rtppreproc config file
+    
     Returns
     -------
     none, create symbolic links
 
     """
-    # define local variables from config dict
+
+    # define local variables from lc_config dict
+    # input from get_parser
+    lc_config_path = parser_namespace.lc_config
+    sub_ses_list_path = parser_namespace.sub_ses_list
+    container_specific_config_path= parser_namespace.container_specific_config
+    run_lc=parser_namespace.run_lc
+    
     # general level variables:
+    
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"]
     force = (lc_config["general"]["force"])
@@ -378,13 +396,13 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
     # if force is true and we do run_lc, then we will never overwritte
     force=force and (~run_lc)
-    analysis = lc_config["general"]["analysis"]
     # container specific:
-    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+    precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
+    anat_analysis_num = lc_config["container_specific"][container]["anat_analysis_num"]
     rpe = lc_config["container_specific"][container]["rpe"]
     version = lc_config["container_specific"][container]["version"]
     srcFile_container_config_json= container_specific_config_path[0]
+    
     new_container_specific_config_path=[]
     container_specific_config_data = json.load(open(srcFile_container_config_json))
     pe_dir = container_specific_config_data["config"]["pe_dir"]
@@ -398,8 +416,8 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
         basedir,
         "nifti",
         "derivatives",
-        precontainerfs,
-        "analysis-" + preanalysisfs,
+        precontainer_anat,
+        "analysis-" + anat_analysis_num,
         "sub-" + sub,
         "ses-" + ses,
         "output",
@@ -507,28 +525,18 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
 
     # creat input and output directory for this container, the dstDir_output should be empty, the dstdstDir_input should contains all the symlinks
     dstdstDir_input = os.path.join(
-        basedir,
-        "nifti",
-        "derivatives",
-        f"{container}_{version}",
-        "analysis-" + analysis,
+        Dir_analysis,
         "sub-" + sub,
         "ses-" + ses,
         "input",
     )
     dstDir_output = os.path.join(
-        basedir,
-        "nifti",
-        "derivatives",
-        f"{container}_{version}",
-        "analysis-" + analysis,
+        Dir_analysis,
         "sub-" + sub,
         "ses-" + ses,
         "output",
     )
-    Dir_analysis = os.path.join(
-        basedir, "nifti", "derivatives", f"{container}_{version}", "analysis-" + analysis
-    )
+
     if not os.path.exists(dstdstDir_input):
         os.makedirs(dstdstDir_input)
     if not os.path.exists(dstDir_output):
@@ -575,6 +583,12 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
     copy_file(srcFile_container_config_json, dstFilecontainer_config, force)
     new_container_specific_config_path.append(dstFilecontainer_config)
+    
+    config_under_analysis= {
+        "new_lc_config_path": new_lc_config_path, 
+        "new_sub_ses_list_path": new_sub_ses_list_path,
+        "new_container_specific_config_path": new_container_specific_config_path }
+    
     # Create the symbolic links
     force_symlink(srcFileT1, dstT1file, force)
     force_symlink(srcFileMask, dstMaskFile, force)
@@ -589,12 +603,12 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
         force_symlink(srcFileDwi_bvec_R, dstFileDwi_bvec_R, force)
         logger.info("\n"
                    +"---------------The rtppreproc rpe=True symlinks created")
-    return new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path
+    return config_under_analysis
 
 
 
 #%%
-def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_specific_config_path,run_lc):
+def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses):
     """
     Parameters
     ----------
@@ -612,18 +626,23 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
 
     """
     # define local variables from config dict
+    # input from get_parser
+    lc_config_path = parser_namespace.lc_config
+    sub_ses_list_path = parser_namespace.sub_ses_list
+    container_specific_config_path= parser_namespace.container_specific_config
+    run_lc=parser_namespace.run_lc
+    
     # general level variables:
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"]
     force = (lc_config["general"]["force"])
     force = force and (~run_lc)
-    analysis = lc_config["general"]["analysis"]
     # rtppipeline specefic variables
     version = lc_config["container_specific"][container]["version"]
-    precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
-    preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
-    precontainerpp = lc_config["container_specific"][container]["precontainerpp"]
-    preanalysispp = lc_config["container_specific"][container]["preanalysispp"]
+    precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
+    anat_analysis_num = lc_config["container_specific"][container]["anat_analysis_num"]
+    precontainer_preproc = lc_config["container_specific"][container]["precontainer_preproc"]
+    preproc_analysis_num = lc_config["container_specific"][container]["preproc_analysis_num"]
     srcFile_container_config_json= container_specific_config_path[0]
     srcFile_tractparams= container_specific_config_path[1]
     new_container_specific_config_path=[]
@@ -632,8 +651,8 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
         basedir,
         "nifti",
         "derivatives",
-        precontainerfs,
-        "analysis-" + preanalysisfs,
+        precontainer_anat,
+        "analysis-" + anat_analysis_num,
         "sub-" + sub,
         "ses-" + ses,
         "output",
@@ -642,8 +661,8 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
         basedir,
         "nifti",
         "derivatives",
-        precontainerpp,
-        "analysis-" + preanalysispp,
+        precontainer_preproc,
+        "analysis-" + preproc_analysis_num,
         "sub-" + sub,
         "ses-" + ses,
         "output",
@@ -657,28 +676,18 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
 
     # creat input and output directory for this container, the dstDir_output should be empty, the dstdstDir_input should contains all the symlinks
     dstdstDir_input = os.path.join(
-        basedir,
-        "nifti",
-        "derivatives",
-        f"{container}_{version}",
-        "analysis-" + analysis,
+        Dir_analysis,
         "sub-" + sub,
         "ses-" + ses,
         "input",
     )
     dstDir_output = os.path.join(
-        basedir,
-        "nifti",
-        "derivatives",
-        f"{container}_{version}",
-        "analysis-" + analysis,
+        Dir_analysis,
         "sub-" + sub,
         "ses-" + ses,
         "output",
     )
-    Dir_analysis = os.path.join(
-        basedir, "nifti", "derivatives", f"{container}_{version}", "analysis-" + analysis
-    )
+
     # under dstdstDir_input there are a lot of dir also needs to be there to have symlinks
     if not os.path.exists(dstdstDir_input):
         os.makedirs(dstdstDir_input)
@@ -708,8 +717,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
    
    
    
-   # copy the config yaml to analysis folder, the launchcontainer will read from here
-    # copy the lc_config to analysis also, launchcontainer will read this config
+    # copy the config yaml to analysis folder, the launchcontainer will read from here
     new_lc_config_path = os.path.join(Dir_analysis, "lc_config.yaml")
     copy_file(lc_config_path, new_lc_config_path, force)
 
@@ -722,9 +730,13 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     dstFile_tractparams = os.path.join(Dir_analysis, "tractparams.csv")
     copy_file(srcFile_tractparams, dstFile_tractparams,force)
     new_container_specific_config_path.append(dstFile_tractparams)
+    # the tractparams check, at the analysis folder 
     tractparam_df =read_df(dstFile_tractparams)
     check_tractparam(lc_config, sub, ses, tractparam_df)
-
+    config_under_analysis= {
+        "new_lc_config_path": new_lc_config_path, 
+        "new_sub_ses_list_path": new_sub_ses_list_path,
+        "new_container_specific_config_path": new_container_specific_config_path }
 
     # Create the symbolic links
     force_symlink(srcFileT1, dstAnatomicalFile, force)
@@ -735,5 +747,5 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     force_symlink(dstFile_tractparams, dst_tractparams, force)
     logger.info("\n"
                +"-----------------The rtppipeline symlinks created\n")
-    return new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path
+    return config_under_analysis
     

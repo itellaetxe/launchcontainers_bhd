@@ -52,7 +52,7 @@ def cmdrun(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename
     return cmdcmd
 
 #%% the launchcontainer
-def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path):
+def launchcontainers(Dir_analysis, lc_config, sub_ses_list, config_under_analysis, run_it):
     """
     This function launches containers generically in different Docker/Singularity HPCs
     This function is going to assume that all files are where they need to be.
@@ -80,7 +80,6 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"] 
     version = lc_config["container_specific"][container]["version"]
-    analysis = lc_config["general"]["analysis"] 
     containerdir = lc_config["general"]["containerdir"] 
     sif_path = os.path.join(containerdir, f"{container}_{version}.sif")
     force = lc_config["general"]["force"]
@@ -107,48 +106,34 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
         func = row.func
         if RUN=="True" and dwi=="True":
             tmpdir = os.path.join(
-                basedir,
-                "nifti",
-                "derivatives",
-                f"{container}_{version}",
-                "analysis-" + analysis,
+                Dir_analysis,
                 "sub-" + sub,
                 "ses-" + ses,
                 "output", "tmp"
             )
             logdir = os.path.join(
-                basedir,
-                "nifti",
-                "derivatives",
-                f"{container}_{version}",
-                "analysis-" + analysis,
+                Dir_analysis,
                 "sub-" + sub,
                 "ses-" + ses,
                 "output", "log"
             )
             backup_configs = os.path.join(
-                basedir,
-                "nifti",
-                "derivatives",
-                f"{container}_{version}",
-                "analysis-" + analysis,
+                Dir_analysis,
                 "sub-" + sub,
                 "ses-" + ses,
                 "output", "configs"
             )
 
-            path_to_sub_derivatives=os.path.join(basedir,"nifti","derivatives",
-                                                 f"{container}_{version}",
-                                                 f"analysis-{analysis}",
+            path_to_sub_derivatives=os.path.join(Dir_analysis,
                                                  f"sub-{sub}",
                                                  f"ses-{ses}")
 
-            path_to_config_json=new_container_specific_config_path[0]
-            path_to_config_yaml = new_lc_config_path
-            path_to_subSesList = new_sub_ses_list_path
+            path_to_config_json = config_under_analysis["new_container_specific_config_path"]
+            path_to_config_yaml = config_under_analysis["new_lc_config_path"]
+            path_to_subSesList  = config_under_analysis["new_sub_ses_list_path"]
 
 
-            logfilename=f"{logdir}/t-{container}_a-{analysis}_sub-{sub}_ses-{ses}"
+            logfilename=f"{logdir}/t-{container}-sub-{sub}_ses-{ses}"
 
             if not os.path.isdir(tmpdir):
                 os.mkdir(tmpdir)
@@ -166,11 +151,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
             sif_paths.append(sif_path)
             logfilenames.append(logfilename)
             run_its.append(run_it)
-            a=0
-            logger.debug(a)
-            logger.debug(hosts)
-            logger.debug(paths_to_configs_json)
-            a=a+1
+
             if run_it: 
 
                 #future_for_print.append(delayed_dask(sp.run)(cmd,shell=True,pure=False,dask_key_name='sub-'+sub+'_ses-'+ses))
@@ -226,10 +207,8 @@ def main():
     run_lc = parser_namespace.run_lc
     verbose=parser_namespace.verbose
 
-    #set the logging level to get the command 
-    
+    #set the logging level to get the command    
     print_command_only=lc_config["general"]["print_command_only"] #TODO this should be defiend using -v and -print command only
-
     # set logger message level TODO: this should be implememt to be changeable for future 
     if print_command_only:    
         logger.setLevel(logging.CRITICAL)
@@ -237,13 +216,12 @@ def main():
     if verbose:
         logger.setLevel(logging.INFO)    
 
-    new_lc_config_path,new_sub_ses_list_path,new_container_specific_config_path=prepare.prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path, container_specific_config_path, run_lc)
+    config_under_analysis, Dir_analysis=prepare.prepare_input_files(lc_config, lc_config_path, sub_ses_list, sub_ses_list_path, container_specific_config_path)
     
-    new_lc_config=do.read_yaml(new_lc_config_path)
-    new_sub_ses_list=do.read_df(new_sub_ses_list_path)
+    new_lc_config=do.read_yaml(config_under_analysis["new_lc_config_path"])
+    new_sub_ses_list=do.read_df(config_under_analysis["new_sub_ses_list_path"])
 
-
-    launchcontainers(new_lc_config, new_sub_ses_list, run_lc,  new_lc_config_path, new_sub_ses_list_path, new_container_specific_config_path)
+    launchcontainers(Dir_analysis,new_lc_config, new_sub_ses_list, config_under_analysis, run_lc)
 
 
 

@@ -3,6 +3,13 @@ import createsymlinks as csl
 import os
 import filecmp
 import utils as do
+import numpy as np 
+import os.path as path
+import json
+from os import rename
+from glob import glob
+from os import path, symlink, unlink
+from scipy.io import loadmat
 
 
 logger=logging.getLogger("GENERAL")
@@ -46,7 +53,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         f"{container}_{version}",
         f"analysis-{analysis_num:02d}",
                 )
-        
+        #analysis= lc_config['general']['analysis']  leandro mentioned the commantary thing
         analysis_num += 1
         # Naming the potential exist config files
         path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
@@ -109,11 +116,10 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         f"{container}_{version}",
         f"analysis-{analysis_num:02d}",
                 )
-        
-        
+             
     return  Dir_analysis
 # %% prepare_input_files
-def prepare_input_files(parser_namespace, lc_config, df_subSes):
+def prepare_dwi_input(parser_namespace, lc_config, df_subSes):
     """
 
     Parameters
@@ -180,4 +186,125 @@ def prepare_input_files(parser_namespace, lc_config, df_subSes):
                 "#####################################################\n")
     return config_under_analysis, Dir_analysis
 
+def fmrprep_intended_for(sub_ses_list, bids_layout):
+    '''
+    not imlement yet, thinkging how to smartly do the job
+    '''
+    layout= bids_layout
+    subs= sub_ses_list['sub'].tolist()
+    #number_of_topups= fmriprep_configs['number_of_topups'] # a str
+    #index_of_new_topups= fmriprep_configs['number_of_topups'] # a str about the functional run 
+    exp_TRs= [2] #fmriprep_configs['exp_TRs'] # a list
+    
+    for sub in subs:
+        sess= layout.get(subject=sub, return_type='id', target='session')
+        ''' to be implement: the sess now is not controlled by the sub ses list'''
+        logger.info(f'\n working on {sub}...')
+        for ses in sess:
+    
+                # load func and fmaps
+                funcNiftis = layout.get(subject=sub, session=ses, extension='.nii.gz', datatype='func')
+                fmapNiftis = layout.get(subject=sub, session=ses, extension='.nii.gz', datatype='fmap')
 
+                funcNiftisMeta = [funcNiftis[i].get_metadata() for i in range(len(funcNiftis))]
+                fmapNiftisMeta = [fmapNiftis[i].get_metadata() for i in range(len(fmapNiftis))]
+
+                for res in exp_TRs:
+                    funcN = np.array(funcNiftis)[[i['RepetitionTime'] == res for i in funcNiftisMeta]]
+                    # fmapN = np.array(fmapNiftis)[[i['RepetitionTime'] == res for i in fmapNiftisMeta]]
+                    fmapN = fmapNiftis
+                    
+                    # make list with all relative paths of func
+                    funcNiftisRelPaths = [path.join(*funcN[i].relpath.split("/")[1:]) for i in range(len(funcN))]
+                    funcNiftisRelPaths = [fp for fp in funcNiftisRelPaths if ((fp.endswith('_bold.nii.gz') or 
+                                                                            fp.endswith('_sbref.nii.gz')) and 
+                                                                            all([k not in fp for k in ['mag', 'phase']]))]
+
+                    # add list to IntendedFor field in fmap json
+                    for fmapNifti in fmapN:
+                        if not path.exists(fmapNifti.filename.replace('.nii.gz', '_orig.json')):
+                            f = fmapNifti.path.replace('.nii.gz', '.json')
+
+                            with open(f, 'r') as file:
+                                j = json.load(file)
+
+                            j['IntendedFor'] = [f.replace("\\", "/") for f in funcNiftisRelPaths]
+
+                            rename(f, f.replace('.json', '_orig.json'))
+
+                            with open(f, 'w') as file:
+                                json.dump(j, file, indent=2)
+        
+    '''add a function to check, if all the intended for is here, if so, return fmriprep'''
+    return True
+# on going :
+def prepare_fmriprep_input(sub_ses_list, bidslayout, fmriprep_configs):
+    # first create intendedfor at the fmap, topup files
+    # then input the subject looping thing to the fmriprep cmd command
+    # not implement
+    
+    return
+def link_vistadisplog(sub_ses_list, bids_layout):
+    
+    tasks= bidslayout.gettask() # a list
+    taskdict=  {}
+    for index, item in enumerate(tasks):
+        taskdict[item]=index+1
+    
+    for row in sub_ses_list.itertuples(index=True, name='Pandas'):
+        sub  = row.sub
+        ses  = row.ses
+        RUN  = row.RUN
+        matFiles = np.sort(glob(path.join(baseP, sub, ses, '20*.mat')))
+        for matFile in matFiles:
+
+            stimName = loadmat(matFile, simplify_cells=True)['params']['loadMatrix']
+            print(stimName)
+            for key in taskdict.keys():
+                
+                if key in stimName:
+                    if 'tr-2' in stimName:
+                        linkName = path.join(path.dirname(matFile), f'{sub}_{ses}_task-ESCB_run-0{CB}_params.mat')
+                        taskdict[key] += 1
+
+                if path.islink(linkName):
+                    unlink(linkName)
+
+                symlink(path.basename(matFile), linkName)
+
+    return True
+def prepare_prf_input(container, sub_ses_list, bids_layout ,run_lc):
+    # first prepare the sourcedata, the vistadisp-log
+    # then write the subject information to the config.json file
+    
+    if not run_lc:
+        # if the container is prfprepare, do the preparation for vistadisplog
+        # copy the container specific information to the prfprepare.json.
+        # copy the information in subseslist to the prfprepare.json
+        # question, in this way, do we still need the config.json???
+            # i mean yes, but there will always to better options
+        sub_list=sub_ses_list[sub_ses_list['RUN']]['sub'].tolist()
+        ses_list=sub_ses_list[sub_ses_list['RUN']]['ses'].tolist()
+        config_name=f'{container}.json'
+        with open(config_name, 'r') as config_json:
+            j= json.load(config_json)
+        
+        if continer == 'prfprepare':   
+            # do i need to add a check here? I don't think so
+            if link_vistadisplog(sub_ses_list, bids_layout):
+                logger.info('\n'
+                + f'the {container} prestep link vistadisplog has been done!')
+                j['subjects'] =' '.join(sub_list)
+                j['sessions'] =' '.join(ses_list)
+
+        if container =='prfresult':    
+            j['subjects'] =' '.join(sub_list)
+            j['sessions'] =' '.join(ses_list)
+        if container == 'prfanalyze-vista':
+            j['subjectName'] =' '.join(sub_list)
+            j['sessionName'] =' '.join(ses_list)
+        rename(config_name, config_name.replace('.json','_orig.json'))
+        
+        with open(config_name, 'w') as config_json:
+            json.dump(j, config_json, indent=2)
+    return

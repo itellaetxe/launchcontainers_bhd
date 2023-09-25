@@ -91,7 +91,7 @@ def get_parser():
                 f'{parse_dict}\n'+    
         "#####################################################\n")
     
-    return parse_namespace ,parse_dict
+    return parse_namespace
 # %% read yaml
 def read_yaml(path_to_config_file):
     """

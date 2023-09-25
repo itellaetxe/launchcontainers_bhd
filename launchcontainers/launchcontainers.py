@@ -2,10 +2,6 @@ import os
 import subprocess as sp
 import numpy as np
 import logging
-import shlex
-# Dask imports
-from dask import delayed as delayed_dask
-from dask.distributed import progress
 
 # modules in lc
 import dask_schedule_queue as dsq
@@ -15,38 +11,84 @@ import utils as do
 
 logger=logging.getLogger("GENERAL")
 
-
-
 # %% launchcontainers
-def cluster_cmdrun_dwi(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it):
-    logger.info("\n"+ f'start to generate the DWI PIPELINE command')
-    if "BCBL" in host:
-        cmdcmd=f"singularity run -e --no-home "\
-            f"--bind /bcbl:/bcbl "\
-            f"--bind /tmp:/tmp "\
-            f"--bind /export:/export "\
-            f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
-            f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-            f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
-            f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
-    elif "DIPC" in host:
-        cmdcmd=f"singularity run -e --no-home "\
-            f"--bind /scratch:/scratch "\
-            f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
-            f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-            f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
-            f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
-    if run_it:
-        sp.run(cmdcmd,shell=True)
-    else:
-        pass    
-    if cmdcmd is None:
+def generte_cmd(lc_config,sub,ses,Dir_analysis):
+    
+    container= lc_config['general']['container']
+    host = lc_config['gnenral']['host']
+    if container in ['anatrois', 'rtppreproc','rtp-pipeline']:
+        logger.info("\n"+ f'start to generate the DWI PIPELINE command')
+        logfilename=f"{logdir}/t-{container}-sub-{sub}_ses-{ses}"
+        path_to_sub_derivatives=os.path.join(Dir_analysis,
+                                        f"sub-{sub}",
+                                        f"ses-{ses}")
+        
+        if ("BCBL" == host) or ("local" == host):
+            cmd=f"singularity run -e --no-home "\
+                f"--bind /bcbl:/bcbl "\
+                f"--bind /tmp:/tmp "\
+                f"--bind /export:/export "\
+                f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+                f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+                f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+                f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+        
+        elif "DIPC" == host:
+            cmd=f"singularity run -e --no-home "\
+                f"--bind /scratch:/scratch "\
+                f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+                f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+                f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+                f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+    if container == 'fmriprep':
+        logger.info("\n"+ f'start to generate the FMRIPREP command')
+        
+        basedir=lc_config['general']['basedir']
+        homedir= os.path.join(basedir,'singualrity_home')
+        
+        nthreads=lc_config[container]['nthreads']
+        mem=lc_config[container]['mem'] 
+        fs_lisense=lc_config[container]['fs_lisense']
+        sif_path=  lc_config['general']['sif_path']  
+        
+        # so this code, the cmd code for bcbl, dipc, is the same, all this function is to have a runned sp.run, so that the dask can work 
+        cmd= f'module unload singularity/3.5.2; '\
+                f'module load singularity/3.5.2; '\
+                f'mkdir -p {homedir}; '\
+                f'unset PYTHONPATH; ' \
+                f'singularity run '\
+                f'-H {homedir} '\
+                f'-B {basedir}:/base -B {fs_lisense}:/license '\
+                f'--cleanenv {sif_path} '\
+                f'-w /base/derivatives/fmriprep/analysis-sessplit '\
+                f'/base/BIDS {Dir_analysis} participant '\
+                    f'--participant-label sub-{sub} '\
+                f'--skip-bids-validation '\
+                f'--output-spaces func fsnative fsaverage T1w MNI152NLin2009cAsym '\
+                f'--dummy-scans 0 '\
+                f'--use-syn-sdc '\
+                f'--fs-license-file /license/license.txt '\
+                f'--nthreads {nthreads} '\
+                f'--omp-nthreads {nthreads} '\
+                f'--stop-on-first-crash '\
+                f'--mem_mb {(mem*1000)-5000} '\
+    
+    if cmd is None:
         logger.error("\n"+ f'the DWI PIPELINE command is not assigned, please check your config.yaml[general][host] session\n')
         raise ValueError('cmd is not defiend, aborting')
-    return cmdcmd
+    
+    
+    return cmd
 # %% launchcontainers
-def cluster_cmdrun_fmriprep(sub,host,homedir,basedir,fs_lisense,Dir_analysis,sif_path, run_it):
+def cluster_cmdrun_fmriprep(sub,lc_config,homedir,Dir_analysis,run_lc):
     logger.info("\n"+ f'start to generate the FMRIPREP command')
+    
+    basedir=lc_config['general']['basedir']
+    container= lc_config['general']['container']
+    nthreads=lc_config[container]['nthreads']
+    mem=lc_config[container]['mem'] 
+    fs_lisense=lc_config[container]['fs_lisense']
+    sif_path=  lc_config['general']['sif_path']  
     # so this code, the cmd code for bcbl, dipc, is the same, all this function is to have a runned sp.run, so that the dask can work 
     cmd= f'module unload singularity/3.5.2; '\
             f'module load singularity/3.5.2; '\
@@ -69,18 +111,19 @@ def cluster_cmdrun_fmriprep(sub,host,homedir,basedir,fs_lisense,Dir_analysis,sif
             f'--stop-on-first-crash '\
             f'--mem_mb {(mem*1000)-5000} '\
 
-    if run_it:
+    if run_lc:
         sp.run(cmd,shell=True)
     else:
         pass    
-    if cmdcmd is None:
+    if cmd is None:
         logger.error("\n"+ f'the fmriprep is not assigned, please check your config.yaml[general][host] session\n')
         raise ValueError('cmd is not defiend, aborting')
     return cmd
-def cluster_cmdrun_dwi(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it):
+#%%
+def cluster_cmdrun_dwi(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_lc):
     logger.info("\n"+ f'start to generate the DWI PIPELINE command')
     if "BCBL" in host:
-        cmdcmd=f"singularity run -e --no-home "\
+        cmd=f"singularity run -e --no-home "\
             f"--bind /bcbl:/bcbl "\
             f"--bind /tmp:/tmp "\
             f"--bind /export:/export "\
@@ -89,22 +132,22 @@ def cluster_cmdrun_dwi(host,path_to_sub_derivatives,path_to_config_json,sif_path
             f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
             f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
     elif "DIPC" in host:
-        cmdcmd=f"singularity run -e --no-home "\
+        cmd=f"singularity run -e --no-home "\
             f"--bind /scratch:/scratch "\
             f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
             f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
             f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
             f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
-    if run_it:
-        sp.run(cmdcmd,shell=True)
+    if run_lc:
+        sp.run(cmd,shell=True)
     else:
         pass    
-    if cmdcmd is None:
+    if cmd is None:
         logger.error("\n"+ f'the DWI PIPELINE command is not assigned, please check your config.yaml[general][host] session\n')
         raise ValueError('cmd is not defiend, aborting')
-    return cmdcmd
+    return cmd
 #%% the launchcontainer
-def launch_dwi(Dir_analysis, lc_config, sub_ses_list, config_under_analysis, run_it):
+def launch_dwi(Dir_analysis, lc_config, sub_ses_list, configFiles_in_Dir_analysis, run_lc):
     """
     This function launches containers generically in different Docker/Singularity HPCs
     This function is going to assume that all files are where they need to be.
@@ -115,7 +158,7 @@ def launch_dwi(Dir_analysis, lc_config, sub_ses_list, config_under_analysis, run
         Data frame with subject information and if run or not run
     lc_config : dict
         Dictionary with all the values in the configuracion yaml file
-    run_it: boolean
+    run_lc: boolean
         used to control if we run the launchcontainer, or not
     lc_config_path: Str
         the path to lc_config file, it is the input from parser
@@ -176,16 +219,14 @@ def launch_dwi(Dir_analysis, lc_config, sub_ses_list, config_under_analysis, run
                 "output", "configs"
             )
 
-            path_to_sub_derivatives=os.path.join(Dir_analysis,
-                                                 f"sub-{sub}",
-                                                 f"ses-{ses}")
-
-            path_to_config_json = config_under_analysis["new_container_specific_config_path"]
-            path_to_config_yaml = config_under_analysis["new_lc_config_path"]
-            path_to_subSesList  = config_under_analysis["new_sub_ses_list_path"]
 
 
-            logfilename=f"{logdir}/t-{container}-sub-{sub}_ses-{ses}"
+            path_to_config_json = configFiles_in_Dir_analysis["new_container_specific_config_path"]
+            path_to_config_yaml = configFiles_in_Dir_analysis["new_lc_config_path"]
+            path_to_subSesList  = configFiles_in_Dir_analysis["new_sub_ses_list_path"]
+
+
+            
 
             if not os.path.isdir(tmpdir):
                 os.mkdir(tmpdir)
@@ -203,14 +244,14 @@ def launch_dwi(Dir_analysis, lc_config, sub_ses_list, config_under_analysis, run
             paths_to_configs_json.append(path_to_config_json)
             sif_paths.append(sif_path)
             logfilenames.append(logfilename)
-            run_its.append(run_it)
+            run_its.append(run_lc)
             
-            if not run_it:
+            if not run_lc:
                 if host in ['BCBL', 'DIPC']
                     # this cmd is only for print the command 
-                    command= cluster_cmdrun_dwi(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_it)
+                    command= cluster_cmdrun_dwi(host,path_to_sub_derivatives,path_to_config_json,sif_path,logfilename,run_lc)
                      
-                if host =='local'
+                if host =='local':
         
                     command=f"singularity run -e --no-home "\
                         f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
@@ -223,7 +264,7 @@ def launch_dwi(Dir_analysis, lc_config, sub_ses_list, config_under_analysis, run
                                     +f"\n this command will be run on the {host}\n"
                                     +f"{command}\n\n"
                                     +"Please check if the job_script is properlly defined and then starting run_lc \n")
-    if run_it:
+    if run_lc:
         if host in ['BCBL', 'DIPC']
             futures = client.map(cmdrun_dwi,hosts,paths_to_subs_derivatives,paths_to_configs_json,sif_paths,logfilenames,run_its)
             progress(futures)
@@ -246,14 +287,29 @@ def launch_dwi(Dir_analysis, lc_config, sub_ses_list, config_under_analysis, run
     return
 #%% 
 def launch_fmriprep(Dir_analysis,lc_config,sub_ses_list, run_lc):    
+    
     # gathering the input for cmd
+    host = lc_config["general"]["host"]
+    jobqueue_config= lc_config["host_options"][host]
     basedir=lc_config['general']['basedir']
     container= lc_config['general']['container']
     nthreads=lc_config[container]['nthreads']
     mem=lc_config[container]['mem'] 
     fs_lisense=lc_config[container]['fs_lisense']
     sif_path=  lc_config['general']['sif_path']  
+    # Count how many jobs we need to launch from  sub_ses_list
+    n_jobs = np.sum(sub_ses_list.RUN == "True")
 
+    client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
+    logger.info("---this is the cluster and client\n"
+                +f"{client} \n cluster: {cluster} \n")
+    
+    hosts = []
+    paths_to_subs_derivatives = []
+    paths_to_configs_json = []
+    sif_paths = []
+    logfilenames = []
+    run_its=[]
     # need some for loop
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
@@ -266,7 +322,52 @@ def launch_fmriprep(Dir_analysis,lc_config,sub_ses_list, run_lc):
                 'singularity_home',
                 f'sub-{sub}'
             )
-
+            hosts.append(host)
+            paths_to_subs_derivatives.append(path_to_sub_derivatives)
+            paths_to_configs_json.append(path_to_config_json)
+            sif_paths.append(sif_path)
+            logfilenames.append(logfilename)
+            run_its.append(run_lc)
+            
+            if not run_lc:
+                if host in ['BCBL', 'DIPC']
+                    # this cmd is only for print the command 
+                    command= cluster_cmdrun_fmriprep(sub,lc_config,homedir,Dir_analysis,run_lc)
+                     
+                if host =='local':
+        
+                    command=f"singularity run -e --no-home "\
+                        f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+                        f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+                        f"--bind {path_to_config_json}:/flywheel/v0/config.json "\
+                        f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+                
+                logger.critical("\n"
+                                    +f"--------run_lc is false, if True, we would launch this command: \n"
+                                    +f"\n this command will be run on the {host}\n"
+                                    +f"{command}\n\n"
+                                    +"Please check if the job_script is properlly defined and then starting run_lc \n")
+    if run_lc:
+        if host in ['BCBL', 'DIPC']
+            futures = client.map(cmdrun_dwi,hosts,paths_to_subs_derivatives,paths_to_configs_json,sif_paths,logfilenames,run_its)
+            progress(futures)
+            results = client.gather(futures)
+            logger.ino(results)
+            logger.ino('###########')
+        
+            client.close()
+            cluster.close()
+        if host == 'local':
+            sp.run(command, shell = True)
+        
+        do.copy_file(path_to_config_json,backup_config_json,force)
+        do.copy_file(path_to_config_yaml, backup_config_yaml, force)
+        do.copy_file(path_to_subSesList, backup_subSesList, force)
+        logger.info("\n"
+                        +f"copied all the config files to {backup_configs} folder")
+        logger.critical("\n"
+                         + "lanchcontainer finished, all the jobs are done")
+    return
             cmd= f'module unload singularity/3.5.2; '\
                 f'module load singularity/3.5.2; '\
                 f'mkdir -p {homedir}; '\
@@ -318,26 +419,21 @@ def launch_prf(lc_config, run_lc):
     return
 # %% main()
 def main():
-
-    # function 1
-    do.setup_logger()
-    parser_namespace, parser_dict = do.get_parser()
-    
     #get the path from commandline input
+    parser_namespace = do.get_parser()
     lc_config_path = parser_namespace.lc_config
-    lc_config = do.read_yaml(lc_config_path)
-    
+    lc_config = do.read_yaml(lc_config_path)   
     container= lc_config['general']['container']
     sub_ses_list_path = parser_namespace.sub_ses_list
-    sub_ses_list = do.read_df(sub_ses_list_path)
-    
-    container_specific_config_path = parser_dict["container_specific_config"]#this is a list 
+    sub_ses_list = do.read_df(sub_ses_list_path)    
     
     # stored value
     run_lc = parser_namespace.run_lc
     verbose=parser_namespace.verbose
-
-    #set the logging level to get the command    
+    debug= parser_namespace.DEBUG
+    
+    #set the logging level to get the command
+    do.setup_logger()    
     print_command_only=lc_config["general"]["print_command_only"] #TODO this should be defiend using -v and -print command only
     # set logger message level TODO: this should be implememt to be changeable for future 
     if print_command_only:    
@@ -345,18 +441,26 @@ def main():
     
     if verbose:
         logger.setLevel(logging.INFO)    
-
+    if debug:
+        logger.setLevel(logging.DEBUG)
+    
+    # prepare file and launch containers
+    # for DWI pipeline
     if container in ['anatrois', 'rtppreproc', 'rtp-pipeline']:
-        config_under_analysis, Dir_analysis=prepare.prepare_dwi_input(parser_namespace, lc_config, sub_ses_list)
-        new_lc_config=do.read_yaml(config_under_analysis["new_lc_config_path"])
-        new_sub_ses_list=do.read_df(config_under_analysis["new_sub_ses_list_path"])
-        launch_dwi(Dir_analysis,new_lc_config, new_sub_ses_list, config_under_analysis, run_lc)
-
+        configFiles_in_Dir_analysis, Dir_analysis = prepare.prepare_dwi_input(parser_namespace, lc_config, sub_ses_list)
+    
     if container == 'fmriprep':
-        launch_fmriprep(Dir_analysis,lc_config,sub_ses_list, run_lc)
+        configFiles_in_Dir_analysis, Dir_analysis = prepare.prepare_fmriprep_input(parser_namespace, lc_config, sub_ses_list)
+    
     if container in ['prfprepare', 'prfanalyze', 'prfreport']:
-        if prepare.prepare_prf():
-            launch_prf(lc_config, run_lc)
+        pass  
+    
+    new_lc_config=do.read_yaml(configFiles_in_Dir_analysis["new_lc_config_path"])
+    new_sub_ses_list=do.read_df(configFiles_in_Dir_analysis["new_sub_ses_list_path"])
+    
+    launchcontainer(Dir_analysis, new_lc_config , new_sub_ses_list, run_lc)
+    
+
     
 # #%%
 if __name__ == "__main__":

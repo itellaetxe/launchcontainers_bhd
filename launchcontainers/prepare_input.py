@@ -54,7 +54,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         basedir,
         "BIDS",
         "derivatives",
-        f"{container}_{version}",
+        f"{container}", ##########before , there is _{version}
         f"analysis-{analysis_num:02d}",
                 )
         #analysis= lc_config['general']['analysis']  leandro mentioned the commantary thing

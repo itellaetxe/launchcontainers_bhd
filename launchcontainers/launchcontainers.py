@@ -12,7 +12,7 @@ from bids import BIDSLayout
 logger=logging.getLogger("GENERAL")
 
 # %% launchcontainers
-def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json):
+def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc):
     
     basedir=new_lc_config['general']['basedir']
     homedir= os.path.join(basedir,'singualrity_home')
@@ -67,7 +67,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 f'-H {homedir} '\
                 f'-B {basedir}:/base -B {fs_lisense}:/license '\
                 f'--cleanenv {container_path} '\
-                f'-w /base/derivatives/fmriprep/analysis-sessplit '\
+                f'-w {Dir_analysis} '\
                 f'/base/BIDS {Dir_analysis} participant '\
                     f'--participant-label sub-{sub} '\
                 f'--skip-bids-validation '\
@@ -99,7 +99,8 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
     if cmd is None:
         logger.error("\n"+ f'the DWI PIPELINE command is not assigned, please check your config.yaml[general][host] session\n')
         raise ValueError('cmd is not defiend, aborting')
-    sp.run(cmd, shell=True)
+    if run_lc:
+        sp.run(cmd, shell=True)
     return cmd
  
 #%% the launchcontainer
@@ -127,7 +128,7 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
     sess=[]
     Dir_analysiss=[]
     paths_to_analysis_config_json=[]
-    
+    run_lcs=[]
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
         ses  = row.ses.zfill(3)
@@ -149,10 +150,10 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
             sess.append(ses)
             Dir_analysiss.append(Dir_analysis)
             paths_to_analysis_config_json.append(path_to_analysis_config_json)
-            
+            run_lcs.append(run_lc)
             if not run_lc:
                 # this cmd is only for print the command 
-                command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json)
+                command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
                 logger.critical("\n"
                                     +f"--------run_lc is false, if True, we would launch this command: \n"
                                     +f"\n this command will be run on the {host}\n"
@@ -167,7 +168,7 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
         client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
         logger.info("---this is the cluster and client\n"
                     +f"{client} \n cluster: {cluster} \n")
-        futures = client.map(generate_cmd,new_lc_configs,subs,sess,Dir_analysiss,paths_to_analysis_config_json)
+        futures = client.map(generate_cmd,new_lc_configs,subs,sess,Dir_analysiss,paths_to_analysis_config_json, run_lcs)
         progress(futures)
         results = client.gather(futures)
         logger.info(results)

@@ -126,7 +126,7 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
     
     fs_zip = os.path.join(
         basedir,
-        "nifti",
+        "BIDS",
         "derivatives",
         precontainer_anat,
         "analysis-" + anat_analysis_num,
@@ -214,7 +214,7 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
                    +f"########\n the sourceT1 file will be pre_fs\n#########\n")
         srcAnatPath = os.path.join(
             basedir,
-            "nifti",
+            "BIDS",
             "derivatives",
             precontainer_anat,
             "analysis-" + anat_analysis_num,
@@ -258,7 +258,7 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
     else:
         srcFileT1 = os.path.join(
             basedir,
-            "nifti",
+            "BIDS",
             "sub-" + sub,
             "ses-" + ses,
             "anat",
@@ -330,22 +330,6 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
     dstFileAnnot = os.path.join(dstdstDir_input, "annotfile", "annots.zip")
     dstFileMniroizip = os.path.join(dstdstDir_input, "mniroizip", "mniroizip.zip")
 
-    #copy the lc_config to analysis also, launchcontainer will read this config
-    new_lc_config_path = os.path.join(Dir_analysis, "lc_config.yaml")
-    copy_file(lc_config_path, new_lc_config_path, force)
-
-    new_sub_ses_list_path=os.path.join(Dir_analysis, "subSesList.txt")
-    copy_file(sub_ses_list_path, new_sub_ses_list_path,force)
-    
-    dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
-    copy_file(srcFile_container_config_json, dstFilecontainer_config,force)
-    new_container_specific_config_path.append(dstFilecontainer_config)
-    
-    config_under_analysis= {
-        "new_lc_config_path": new_lc_config_path, 
-        "new_sub_ses_list_path": new_sub_ses_list_path,
-        "new_container_specific_config_path": new_container_specific_config_path }
-
     # Create the symbolic links
     
     force_symlink(srcFileT1, dstFileT1, force)
@@ -356,7 +340,7 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
     if mniroizip:
         force_symlink(srcFileMiniroizip, dstFileMniroizip, force)
    
-    return config_under_analysis
+    return 
    
 
 #%%
@@ -409,12 +393,12 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     
     #acq = container_specific_config["acqd"]
     # define base directory for particular subject and session
-    basedir_subses = os.path.join(basedir, "nifti", "sub-" + sub, "ses-" + ses)
+    basedir_subses = os.path.join(basedir, "BIDS", "sub-" + sub, "ses-" + ses)
 
     # the source directory that stores the output of previous anatorois analysis
     srcDirFs = os.path.join(
         basedir,
-        "nifti",
+        "BIDS",
         "derivatives",
         precontainer_anat,
         "analysis-" + anat_analysis_num,
@@ -428,7 +412,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     srcFileT1 = os.path.join(srcDirFs, "T1.nii.gz")
     # brainmask file in anatrois output
     srcFileMask = os.path.join(srcDirFs, "brainmask.nii.gz")
-    # 3 dwi file that needs to be preprocessed, under nifti/sub/ses/dwi
+    # 3 dwi file that needs to be preprocessed, under BIDS/sub/ses/dwi
     # the nii.gz
     srcFileDwi_nii = os.path.join(
         basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+pe_dir+"_dwi.nii.gz"
@@ -441,7 +425,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     srcFileDwi_bvec = os.path.join(
         basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+pe_dir+"_dwi.bvec"
     )
-    # check how many *dir_dwi.nii.gz there are in the nifti/sub/ses/dwi directory
+    # check how many *dir_dwi.nii.gz there are in the BIDS/sub/ses/dwi directory
     dwi_dir = glob.glob(os.path.join(basedir_subses,"dwi","*_dir-"+pe_dir+"*_dwi.nii.gz"))
     if len(dwi_dir) > 1:
         dwi_acq = [f for f in dwi_dir if 'acq-' in f]
@@ -573,21 +557,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
         dstFileDwi_bval_R = os.path.join(dstdstDir_input, "RBVL", "dwiR.bval")
         dstFileDwi_bvec_R = os.path.join(dstdstDir_input, "RBVC", "dwiR.bvec")
 
-    # copy the lc_config to analysis also, launchcontainer will read this config
-    new_lc_config_path = os.path.join(Dir_analysis, "lc_config.yaml")
-    copy_file(lc_config_path, new_lc_config_path, force)
-
-    new_sub_ses_list_path = os.path.join(Dir_analysis, "subSesList.txt")
-    copy_file(sub_ses_list_path, new_sub_ses_list_path, force)
-
-    dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
-    copy_file(srcFile_container_config_json, dstFilecontainer_config, force)
-    new_container_specific_config_path.append(dstFilecontainer_config)
     
-    config_under_analysis= {
-        "new_lc_config_path": new_lc_config_path, 
-        "new_sub_ses_list_path": new_sub_ses_list_path,
-        "new_container_specific_config_path": new_container_specific_config_path }
     
     # Create the symbolic links
     force_symlink(srcFileT1, dstT1file, force)
@@ -603,7 +573,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
         force_symlink(srcFileDwi_bvec_R, dstFileDwi_bvec_R, force)
         logger.info("\n"
                    +"---------------The rtppreproc rpe=True symlinks created")
-    return config_under_analysis
+    return 
 
 
 
@@ -649,7 +619,7 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses):
     # the source directory
     srcDirfs = os.path.join(
         basedir,
-        "nifti",
+        "BIDS",
         "derivatives",
         precontainer_anat,
         "analysis-" + anat_analysis_num,
@@ -659,7 +629,7 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses):
     )
     srcDirpp = os.path.join(
         basedir,
-        "nifti",
+        "BIDS",
         "derivatives",
         precontainer_preproc,
         "analysis-" + preproc_analysis_num,
@@ -714,29 +684,12 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses):
     dstDwi_bvecFile = os.path.join(dstdstDir_input, "bvec", "dwi.bvec")
     dst_tractparams = os.path.join(dstdstDir_input, "tractparams", "tractparams.csv")
 
-   
-   
-   
-    # copy the config yaml to analysis folder, the launchcontainer will read from here
-    new_lc_config_path = os.path.join(Dir_analysis, "lc_config.yaml")
-    copy_file(lc_config_path, new_lc_config_path, force)
-
-    new_sub_ses_list_path = os.path.join(Dir_analysis, "subSesList.txt")
-    copy_file(sub_ses_list_path, new_sub_ses_list_path, force)
-
-    dstFilecontainer_config = os.path.join(Dir_analysis, "config.json")
-    copy_file(srcFile_container_config_json, dstFilecontainer_config, force)
-    new_container_specific_config_path.append(dstFilecontainer_config)
     dstFile_tractparams = os.path.join(Dir_analysis, "tractparams.csv")
-    copy_file(srcFile_tractparams, dstFile_tractparams,force)
-    new_container_specific_config_path.append(dstFile_tractparams)
+
     # the tractparams check, at the analysis folder 
     tractparam_df =read_df(dstFile_tractparams)
     check_tractparam(lc_config, sub, ses, tractparam_df)
-    config_under_analysis= {
-        "new_lc_config_path": new_lc_config_path, 
-        "new_sub_ses_list_path": new_sub_ses_list_path,
-        "new_container_specific_config_path": new_container_specific_config_path }
+
 
     # Create the symbolic links
     force_symlink(srcFileT1, dstAnatomicalFile, force)
@@ -747,5 +700,5 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses):
     force_symlink(dstFile_tractparams, dst_tractparams, force)
     logger.info("\n"
                +"-----------------The rtppipeline symlinks created\n")
-    return config_under_analysis
+    return 
     

@@ -70,7 +70,6 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 f'-w {Dir_analysis} '\
                 f'/base/BIDS {Dir_analysis} participant '\
                     f'--participant-label sub-{sub} '\
-                f'--session-id ses-{ses} '\
                 f'--skip-bids-validation '\
                 f'--output-spaces func fsnative fsaverage T1w MNI152NLin2009cAsym '\
                 f'--dummy-scans 0 '\
@@ -161,7 +160,9 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
                                     +f"\n the command will be run on the {host}"
                                     +f"\n\n{command}\n\n"
                                     +"Please check if the job_script is properlly defined and then starting run_lc \n")
-   
+                if new_lc_config['general']['container']=='fmriprep':
+                    logger.critical('\n'+ 'fmriprep now can not deal with session specification, so the analysis are runing on all sessions of the subject you are specifying')
+
     if run_lc:
 
         # Count how many jobs we need to launch from  sub_ses_list

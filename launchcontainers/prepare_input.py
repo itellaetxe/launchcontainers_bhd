@@ -286,7 +286,7 @@ def fmrprep_intended_for(sub_ses_list, bidslayout):
 
 def link_vistadisplog(basedir, sub_ses_list, bids_layout):
     
-    tasks= bids_layout.get_tasks() # a list
+    
     taskdict=  {}
     baseP=os.path.join(basedir,'BIDS','sourcedata','vistadisplog')
     for index, item in enumerate(tasks):
@@ -297,6 +297,7 @@ def link_vistadisplog(basedir, sub_ses_list, bids_layout):
         sub  = row.sub
         ses  = row.ses.zfill(3)
         RUN  = row.RUN
+        tasks= bids_layout.get_tasks(subject=sub, session=ses)
         matFiles = np.sort(glob(path.join(baseP, f'sub-{sub}', f'ses-{ses}', '20*.mat')))
         logger.debug(f"\n {path.join(baseP, f'sub-{sub}', f'ses-{ses}', '20*.mat')}")
         logger.debug(f'\n {matFiles}')

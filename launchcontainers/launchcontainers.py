@@ -156,10 +156,10 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
                 # this cmd is only for print the command 
                 command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
                 logger.critical("\n"
-                                    +f"--------run_lc is false, if True, we would launch this command: \n"
+                                    +f"--------run_lc is false, if True the command follows will be launched"
                                     +f"\n the command is for subject-{sub}, and session- {ses}"
                                     +f"\n the command will be run on the {host}"
-                                    +f"\n{command}\n\n"
+                                    +f"\n\n{command}\n\n"
                                     +"Please check if the job_script is properlly defined and then starting run_lc \n")
    
     if run_lc:

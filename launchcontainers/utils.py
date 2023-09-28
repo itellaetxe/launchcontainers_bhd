@@ -30,7 +30,7 @@ def get_parser():
         -cc path/to/contianer_specific_config.json \n
         ##--cc note, for the case of rtp-pipeline, you need to input two paths, one for config.json and one for tractparm.csv \n\n
         ###########STEP2############# \n
-        After you have done step 1, all the config files are copied to nifti/sub/ses/analysis/ directory 
+        After you have done step 1, all the config files are copied to BIDS/sub/ses/analysis/ directory 
         When you are confident everthing is there, press up arrow to recall the command in STEP 1, and just add --run_lc after it. \n\n  
         
         We add lots of check in the script to avoid program breakdowns. if you found new bugs while running, do not hesitate to contact us"""
@@ -40,25 +40,25 @@ def get_parser():
         "-lcc",
         "--lc_config",
         type=str,
-        # default="/Users/tiger/TESTDATA/PROJ01/nifti/config_launchcontainer_copy.yaml",
-        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/lc_config.yaml",
+        default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/BIDS/lc_config.yaml",
         help="path to the config file",
     )
     parser.add_argument(
         "-ssl",
         "--sub_ses_list",
         type=str,
-        # default="/Users/tiger/TESTDATA/PROJ01/nifti/subSesList.txt",
-        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/subSesList.txt",
+        default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/BIDS/subSesList.txt",
         help="path to the subSesList",
     )
     parser.add_argument(
         "-cc",
         "--container_specific_config",
-        nargs='+',
-        # default="/Users/tiger/Documents/GitHub/launchcontainers/example_configs/container_especific_example_configs/anatrois/4.2.7_7.1.1/example_config.json",
-        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/config.json",
-        help="path to the container specific config file(s). First file needs to be the config.json file of the container. Some containers might need more config files (e.g., rtp-pipeline needs tractparams.csv). Add them here separated with a space.",
+        nargs='*',
+        default=[],
+        #default=["/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/BIDS/config.json"],
+        help="path to the container specific config file(s). First file needs to be the config.json file of the container. \
+        Some containers might need more config files (e.g., rtp-pipeline needs tractparams.csv). \
+        some don't need any configs (e.g fmriprep)    Add them here separated with a space.",
     )
    
     parser.add_argument('--run_lc', action='store_true',
@@ -91,7 +91,7 @@ def get_parser():
                 f'{parse_dict}\n'+    
         "#####################################################\n")
     
-    return parse_namespace ,parse_dict
+    return parse_namespace
 # %% read yaml
 def read_yaml(path_to_config_file):
     """

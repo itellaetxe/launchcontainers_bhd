@@ -1,11 +1,10 @@
 import logging
-from os.path import expanduser, join
 from dask import config
 from dask.distributed import Client, LocalCluster
 from dask_jobqueue import SGECluster, SLURMCluster
 
-
 logger = logging.getLogger("GENERAL")
+
 def initiate_cluster(jobqueue_config, n_job):
     '''
     Parameters
@@ -104,7 +103,7 @@ def dask_scheduler(jobqueue_config, n_job):
             "the jobqueue YAML example, modify it so it works in your cluster "
             "and add it to ~/.config/dask "
             "local configuration will be used."
-            "You can find a jobqueue YAML example in the pySPFM/jobqueue.yaml file."
+            
         )
         cluster = None
     else:

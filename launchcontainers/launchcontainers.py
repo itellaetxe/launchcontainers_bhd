@@ -15,7 +15,7 @@ logger=logging.getLogger("GENERAL")
 def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc):
     
     basedir=new_lc_config['general']['basedir']
-    homedir= os.path.join(basedir,'singualrity_home')
+    homedir= os.path.join(basedir,'singularity_home')
     container= new_lc_config['general']['container']
     host = new_lc_config['general']['host']
     sif_path=  new_lc_config['general']['sif_path']  
@@ -70,6 +70,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 f'-w {Dir_analysis} '\
                 f'/base/BIDS {Dir_analysis} participant '\
                     f'--participant-label sub-{sub} '\
+                f'--session-id ses-{ses} '\
                 f'--skip-bids-validation '\
                 f'--output-spaces func fsnative fsaverage T1w MNI152NLin2009cAsym '\
                 f'--dummy-scans 0 '\
@@ -82,7 +83,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
     
     if container in ['prfprepare','prfreport','prfanalyze-vista']:
         config_name=new_lc_config['container_specific'][container]['config_name']
-        homedir= os.path.join(basedir,'singualrity_home')
+        homedir= os.path.join(basedir,'singularity_home')
         container_path= os.path.join(sif_path, f"{container}_{new_lc_config['container_specific'][container]['version']}.sif")
         
         cmd= f'module load singularity/3.5.2; '\
@@ -134,7 +135,7 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
         ses  = row.ses.zfill(3)
         RUN  = row.RUN
         dwi  = row.dwi
-        if RUN=="True" and dwi=="True":
+        if RUN=="True":
 
 
 
@@ -156,8 +157,9 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
                 command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
                 logger.critical("\n"
                                     +f"--------run_lc is false, if True, we would launch this command: \n"
-                                    +f"\n this command will be run on the {host}\n"
-                                    +f"{command}\n\n"
+                                    +f"\n the command is for subject-{sub}, and session- {ses}"
+                                    +f"\n the command will be run on the {host}"
+                                    +f"\n{command}\n\n"
                                     +"Please check if the job_script is properlly defined and then starting run_lc \n")
    
     if run_lc:

@@ -124,10 +124,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
                                 + f"going to create analysis {analysis_num:02}")
                     analysis_num+=1   
             else:
-                do.copy_file(parser_namespace.lc_config, path_to_analysis_lc_config, force) 
-                do.copy_file(parser_namespace.sub_ses_list,path_to_analysis_sub_ses_list,force)
-                for orig_config_json, copy_config_json in zip(parser_namespace.container_specific_config,path_to_analysis_container_specific_config):
-                    do.copy_file(orig_config_json, copy_config_json, force)        
+                analysis_num+=1 
 
         if not os.path.isdir(Dir_analysis):
             os.makedirs(Dir_analysis)

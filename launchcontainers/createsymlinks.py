@@ -193,7 +193,7 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
         # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
         # if force is true and we do run_lc, then we will never overwritte
     force = (lc_config["general"]["force"])
-    force = force and (~run_lc)
+    force = force and (not run_lc)
      
     # container specific:
     pre_fs = lc_config["container_specific"][container]["pre_fs"]
@@ -379,7 +379,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     # if force is False, then we don't want to overwrite anything
     # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
     # if force is true and we do run_lc, then we will never overwritte
-    force=force and (~run_lc)
+    force=force and (not run_lc)
     # container specific:
     precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
     anat_analysis_num = lc_config["container_specific"][container]["anat_analysis_num"]
@@ -606,7 +606,7 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses):
     basedir = lc_config["general"]["basedir"]
     container = lc_config["general"]["container"]
     force = (lc_config["general"]["force"])
-    force = force and (~run_lc)
+    force = force and (not run_lc)
     # rtppipeline specefic variables
     version = lc_config["container_specific"][container]["version"]
     precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]

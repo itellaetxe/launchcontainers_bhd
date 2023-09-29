@@ -19,6 +19,12 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
     container= new_lc_config['general']['container']
     host = new_lc_config['general']['host']
     sif_path=  new_lc_config['general']['sif_path']  
+    
+    jobqueue_config= new_lc_config['host_options'][host]
+
+    envcmd= f"module load {jobqueue_config['sin_ver']} "\
+            f"export SINGULARITYENV_TMPDIR={jobqueue_config['tmpdir']} "\
+    
     if container in ['anatrois', 'rtppreproc','rtp-pipeline']:
         logger.info("\n"+ f'start to generate the DWI PIPELINE command')
         logdir= os.path.join(
@@ -32,8 +38,17 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                                         f"sub-{sub}",
                                         f"ses-{ses}")
         
-        if ("BCBL" == host) or ("local" == host):
+        if "BCBL" == host :
             cmd=f"singularity run -e --no-home "\
+                f"--bind /bcbl:/bcbl "\
+                f"--bind /tmp:/tmp "\
+                f"--bind /export:/export "\
+                f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
+                f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
+                f"--bind {path_to_analysis_config_json}:/flywheel/v0/config.json "\
+                f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+        if ("local" == host):
+            cmd=envcmd+f"singularity run -e --no-home "\
                 f"--bind /bcbl:/bcbl "\
                 f"--bind /tmp:/tmp "\
                 f"--bind /export:/export "\
@@ -49,6 +64,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
                 f"--bind {path_to_analysis_config_json}:/flywheel/v0/config.json "\
                 f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
+    
     if container == 'fmriprep':
         logger.info("\n"+ f'start to generate the FMRIPREP command')
                 
@@ -57,50 +73,78 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
         fs_lisense=new_lc_config["container_specific"][container]['fs_lisense']
         sif_path=  new_lc_config['general']['sif_path']  
         container_path= os.path.join(sif_path, f"{container}_{new_lc_config['container_specific'][container]['version']}.sif")
-        precommand=f'module unload singularity/3.5.2; '\
-                f'module load singularity/3.5.2; '\
-                f'mkdir -p {homedir}; '\
+        precommand=f'mkdir -p {homedir}; '\
                 f'unset PYTHONPATH; ' \
         
-        # so this code, the cmd code for bcbl, dipc, is the same, all this function is to have a runned sp.run, so that the dask can work 
-        cmd= precommand+f'singularity run '\
-                f'-H {homedir} '\
-                f'-B {basedir}:/base -B {fs_lisense}:/license '\
-                f'--cleanenv {container_path} '\
-                f'-w {Dir_analysis} '\
-                f'/base/BIDS {Dir_analysis} participant '\
-                    f'--participant-label sub-{sub} '\
-                f'--skip-bids-validation '\
-                f'--output-spaces func fsnative fsaverage T1w MNI152NLin2009cAsym '\
-                f'--dummy-scans 0 '\
-                f'--use-syn-sdc '\
-                f'--fs-license-file /license/license.txt '\
-                f'--nthreads {nthreads} '\
-                f'--omp-nthreads {nthreads} '\
-                f'--stop-on-first-crash '\
-                f'--mem_mb {(mem*1000)-5000} '\
+        if "local" == host:
+            cmd = envcmd + precommand+f'singularity run '\
+                    f'-H {homedir} '\
+                    f'-B {basedir}:/base -B {fs_lisense}:/license '\
+                    f'--cleanenv {container_path} '\
+                    f'-w {Dir_analysis} '\
+                    f'/base/BIDS {Dir_analysis} participant '\
+                        f'--participant-label sub-{sub} '\
+                    f'--skip-bids-validation '\
+                    f'--output-spaces func fsnative fsaverage T1w MNI152NLin2009cAsym '\
+                    f'--dummy-scans 0 '\
+                    f'--use-syn-sdc '\
+                    f'--fs-license-file /license/license.txt '\
+                    f'--nthreads {nthreads} '\
+                    f'--omp-nthreads {nthreads} '\
+                    f'--stop-on-first-crash '\
+                    f'--mem_mb {(mem*1000)-5000} '\
+        
+        if host in ['BCBL','DIPC']:
+            cmd = precommand+f'singularity run '\
+                    f'-H {homedir} '\
+                    f'-B {basedir}:/base -B {fs_lisense}:/license '\
+                    f'--cleanenv {container_path} '\
+                    f'-w {Dir_analysis} '\
+                    f'/base/BIDS {Dir_analysis} participant '\
+                        f'--participant-label sub-{sub} '\
+                    f'--skip-bids-validation '\
+                    f'--output-spaces func fsnative fsaverage T1w MNI152NLin2009cAsym '\
+                    f'--dummy-scans 0 '\
+                    f'--use-syn-sdc '\
+                    f'--fs-license-file /license/license.txt '\
+                    f'--nthreads {nthreads} '\
+                    f'--omp-nthreads {nthreads} '\
+                    f'--stop-on-first-crash '\
+                    f'--mem_mb {(mem*1000)-5000} '\
+
     
     if container in ['prfprepare','prfreport','prfanalyze-vista']:
         config_name=new_lc_config['container_specific'][container]['config_name']
         homedir= os.path.join(basedir,'singularity_home')
         container_path= os.path.join(sif_path, f"{container}_{new_lc_config['container_specific'][container]['version']}.sif")
-        
-        cmd= f'module load singularity/3.5.2; '\
-                'unset PYTHONPATH; '\
+        if host in ['BCBL','DIPC']:
+            cmd=   'unset PYTHONPATH; '\
                 f'singularity run '\
                 f'-H {homedir} '\
                 f'-B {basedir}/derivatives/fmriprep:/flywheel/v0/input '\
-                f'-B {basedir}/derivatives:/flywheel/v0/output '\
+                f'-B {basedir}/derivatives/:/flywheel/v0/output '\
                 f'-B {basedir}/BIDS:/flywheel/v0/BIDS '\
-                    f'-B {basedir}/container_specific_config/{config_name}.json:/flywheel/v0/config.json '\
+                    f'-B {Dir_analysis}/{config_name}.json:/flywheel/v0/config.json '\
 	            f'-B {basedir}/license/license.txt:/opt/freesurfer/.license '\
                 f'--cleanenv {container_path} '\
-    
+        
+        elif host == 'local':
+            cmd= envcmd+  'unset PYTHONPATH; '\
+                f'singularity run '\
+                f'-H {homedir} '\
+                f'-B {basedir}/derivatives/fmriprep:/flywheel/v0/input '\
+                f'-B {basedir}/derivatives/:/flywheel/v0/output '\
+                f'-B {basedir}/BIDS:/flywheel/v0/BIDS '\
+                    f'-B {Dir_analysis}/{config_name}.json:/flywheel/v0/config.json '\
+	            f'-B {basedir}/license/license.txt:/opt/freesurfer/.license '\
+                f'--cleanenv {container_path} '\
+
     if cmd is None:
         logger.error("\n"+ f'the DWI PIPELINE command is not assigned, please check your config.yaml[general][host] session\n')
         raise ValueError('cmd is not defiend, aborting')
     if run_lc:
         sp.run(cmd, shell=True)
+    
     return cmd
  
 #%% the launchcontainer
@@ -122,6 +166,13 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
     jobqueue_config= new_lc_config["host_options"][host]
     logger.debug(f'\n,, this is the job_queue config {jobqueue_config}')
     force = new_lc_config["general"]["force"]    
+    
+    # Count how many jobs we need to launch from  sub_ses_list
+    n_jobs = np.sum(sub_ses_list.RUN == "True")
+
+    client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
+    logger.info("---this is the cluster and client\n"
+                +f"{client} \n cluster: {cluster} \n")
 
     new_lc_configs=[]
     subs=[]
@@ -151,26 +202,31 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
             Dir_analysiss.append(Dir_analysis)
             paths_to_analysis_config_json.append(path_to_analysis_config_json)
             run_lcs.append(run_lc)
+            
             if not run_lc:
                 # this cmd is only for print the command 
                 command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
                 logger.critical("\n"
-                                    +f"--------run_lc is false, if True the command follows will be launched"
+                                    +f"--------run_lc is false, you are running the prepare mode of launchcontiner"
+                                    +f"\n the cluster job script is {cluster.job_script()}"
                                     +f"\n the command is for subject-{sub}, and session- {ses}"
                                     +f"\n the command will be run on the {host}"
                                     +f"\n\n{command}\n\n"
-                                    +"Please check if the job_script is properlly defined and then starting run_lc \n")
+                                    +"Please check: "
+                                    +"\n (1) launchcontainer prepare the input properly"
+                                    +"\n (2) the commandline command for each subject is properly formed, you can simply copy the command \
+                                    for one subject and launch it on the prompt before you launch multiple subjects \
+                                        \n Onec the check is done, launch the jobs by adding --run_lc"
+                                    )
                 if new_lc_config['general']['container']=='fmriprep':
                     logger.critical('\n'+ 'fmriprep now can not deal with session specification, so the analysis are runing on all sessions of the subject you are specifying')
 
-    if run_lc:
+   
 
-        # Count how many jobs we need to launch from  sub_ses_list
-        n_jobs = np.sum(sub_ses_list.RUN == "True")
 
-        client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
-        logger.info("---this is the cluster and client\n"
-                    +f"{client} \n cluster: {cluster} \n")
+  
+        
+    if run_lc:    
         futures = client.map(generate_cmd,new_lc_configs,subs,sess,Dir_analysiss,paths_to_analysis_config_json, run_lcs)
         progress(futures)
         results = client.gather(futures)
@@ -180,7 +236,8 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
         cluster.close()
         
         logger.critical("\n"
-                         + "lanchcontainer finished, all the jobs are done")
+                        + "lanchcontainer finished, all the jobs are done")
+    
     return
 # %% main()
 def main():

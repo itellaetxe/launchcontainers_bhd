@@ -55,6 +55,7 @@ general:
   sif_path: /bcbl/home/public/Gari/singularity_images
   container: prfprepare  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, prfprepare, prfanalyze-vista, prfresult, fmriprep TODO: heudiconv, 
   force: false
+  analysis_name: '' # you can put a str here to give a brief description of your analysis, it will be called anaysis-{yourinput}-{number count} under derivative folder
   host: local #valid options: local, BCBL, DIPC.
   print_command_only: false  
   

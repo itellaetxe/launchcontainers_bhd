@@ -32,11 +32,12 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     force = lc_config["general"]["force"]
     host=lc_config['general']['host']
     config_name=lc_config['container_specific'][container]['config_name']
+    analysis_name= lc_config['general']['analysis_name']
     analysis_num=1
     found_analysis_dir=False
     run_lc = parser_namespace.run_lc
     
-    force= force and (~run_lc)    
+    force= force and (not run_lc)    
     
     version = lc_config["container_specific"][container]["version"]    
     # Get the input config files from parser  
@@ -47,7 +48,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         # if it is exit, check if the config information of lc_yaml, the looping information of subseslist and contianer specific config are the smae
         # if either one of them have any tiny mistake, make a new analysis folder, and copy them to there, and give a note: this is new thing, different from 
         # what you are indicating, we add a new thing for your
-    while not found_analysis_dir and analysis_num <100 and ~run_lc:
+    while not found_analysis_dir and analysis_num <100:
         
         
         Dir_analysis = os.path.join(
@@ -55,42 +56,46 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         "BIDS",
         "derivatives",
         f"{container}", ##########before , there is _{version}
-        f"analysis-{analysis_num:02d}",
+        f"analysis-{analysis_name}-{analysis_num:02d}",
                 )
-        #analysis= lc_config['general']['analysis']  leandro mentioned the commantary thing
+        
+
         logger.debug(f'\n this is the analysis {analysis_num} we are searching')
+        
         # define the potential exist config files
         path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
         path_to_analysis_sub_ses_list = os.path.join(Dir_analysis, "subSesList.txt")
+        
         if container  not in ['rtp-pipeline', 'fmriprep']:    
             path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}.json")]
         if container == 'rtp-pipeline':
             path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}",+".json"), os.path.join(Dir_analysis, "tractparams.csv")]
         if container == 'fmriprep':
             path_to_analysis_container_specific_config=[]
+        
         Dict_configs_under_analysisfolder={
         'new_lc_config_path':path_to_analysis_lc_config,
         'new_sub_ses_list_path':path_to_analysis_sub_ses_list,
         'new_container_specific_config_path': path_to_analysis_container_specific_config
             }
+        
         copies = [path_to_analysis_lc_config, path_to_analysis_sub_ses_list] + path_to_analysis_container_specific_config
     
         all_copies_present= all(os.path.isfile(copy_path) for copy_path in copies)
+        
         logger.debug (f'\n the config.json is {path_to_analysis_container_specific_config}')
+        
         # compare if all the diles are the same
         general_input= lc_config["general"]
         container_input=lc_config["container_specific"][container]
         logger.debug(host)
         host_input= lc_config["host_options"][host]
         
-        
 
         
         if os.path.isdir(Dir_analysis):
             logger.debug(f'\n we found the exist analysis dir, going to check if all the config information'
                          +'is the same as the input')
-            
-            
 
             if all_copies_present:
                 lc_config_copy=do.read_yaml(path_to_analysis_lc_config)
@@ -126,7 +131,8 @@ def prepare_analysis_folder(parser_namespace, lc_config):
             else:
                 analysis_num+=1 
 
-        if not os.path.isdir(Dir_analysis):
+        if not os.path.isdir(Dir_analysis) and not run_lc:
+            
             os.makedirs(Dir_analysis)
             do.copy_file(parser_namespace.lc_config, path_to_analysis_lc_config, force) 
             do.copy_file(parser_namespace.sub_ses_list,path_to_analysis_sub_ses_list,force)
@@ -134,6 +140,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
                 do.copy_file(orig_config_json, copy_config_json, force)    
             logger.debug(f'\n the analysis folder is not here, break the while loop') 
             break
+    
     logger.debug(f'\n thisis the analysis folder that goes to other places:\n {Dir_analysis}')
     
     #sys.exit(1)
@@ -236,49 +243,53 @@ def fmrprep_intended_for(sub_ses_list, bidslayout):
     not imlement yet, thinkging how to smartly do the job
     '''
     layout= bidslayout
-    subs= sub_ses_list['sub'].tolist()
     #number_of_topups= fmriprep_configs['number_of_topups'] # a str
     #index_of_new_topups= fmriprep_configs['number_of_topups'] # a str about the functional run 
     exp_TRs= [2] #fmriprep_configs['exp_TRs'] # a list
     
-    for sub in subs:
-        sess= layout.get(subject=sub, return_type='id', target='session')
-        ''' to be implement: the sess now is not controlled by the sub ses list'''
-        logger.info(f'\n working on {sub}...')
-        for ses in sess:
-    
-                # load func and fmaps
-                funcNiftis = layout.get(subject=sub, session=ses, extension='.nii.gz', datatype='func')
-                fmapNiftis = layout.get(subject=sub, session=ses, extension='.nii.gz', datatype='fmap')
+    for row in sub_ses_list.itertuples(index=True, name="Pandas"):
+        sub = row.sub
+        ses = row.ses
+        RUN = row.RUN
+        func = row.func
+        
+        if RUN == "True" and func == "True":
 
-                funcNiftisMeta = [funcNiftis[i].get_metadata() for i in range(len(funcNiftis))]
-                fmapNiftisMeta = [fmapNiftis[i].get_metadata() for i in range(len(fmapNiftis))]
+            logger.info(f'\n working on {sub}...')
 
-                for res in exp_TRs:
-                    funcN = np.array(funcNiftis)[[i['RepetitionTime'] == res for i in funcNiftisMeta]]
-                    # fmapN = np.array(fmapNiftis)[[i['RepetitionTime'] == res for i in fmapNiftisMeta]]
-                    fmapN = fmapNiftis
-                    
-                    # make list with all relative paths of func
-                    funcNiftisRelPaths = [path.join(*funcN[i].relpath.split("/")[1:]) for i in range(len(funcN))]
-                    funcNiftisRelPaths = [fp for fp in funcNiftisRelPaths if ((fp.endswith('_bold.nii.gz') or 
-                                                                            fp.endswith('_sbref.nii.gz')) and 
-                                                                            all([k not in fp for k in ['mag', 'phase']]))]
+        
+            # load func and fmaps
+            funcNiftis = layout.get(subject=sub, session=ses, extension='.nii.gz', datatype='func')
+            fmapNiftis = layout.get(subject=sub, session=ses, extension='.nii.gz', datatype='fmap')
 
-                    # add list to IntendedFor field in fmap json
-                    for fmapNifti in fmapN:
-                        if not path.exists(fmapNifti.filename.replace('.nii.gz', '_orig.json')):
-                            f = fmapNifti.path.replace('.nii.gz', '.json')
+            funcNiftisMeta = [funcNiftis[i].get_metadata() for i in range(len(funcNiftis))]
+            fmapNiftisMeta = [fmapNiftis[i].get_metadata() for i in range(len(fmapNiftis))]
 
-                            with open(f, 'r') as file:
-                                j = json.load(file)
+            for res in exp_TRs:
+                funcN = np.array(funcNiftis)[[i['RepetitionTime'] == res for i in funcNiftisMeta]]
+                # fmapN = np.array(fmapNiftis)[[i['RepetitionTime'] == res for i in fmapNiftisMeta]]
+                fmapN = fmapNiftis
+                
+                # make list with all relative paths of func
+                funcNiftisRelPaths = [path.join(*funcN[i].relpath.split("/")[1:]) for i in range(len(funcN))]
+                funcNiftisRelPaths = [fp for fp in funcNiftisRelPaths if ((fp.endswith('_bold.nii.gz') or 
+                                                                        fp.endswith('_sbref.nii.gz')) and 
+                                                                        all([k not in fp for k in ['mag', 'phase']]))]
 
-                            j['IntendedFor'] = [f.replace("\\", "/") for f in funcNiftisRelPaths]
+                # add list to IntendedFor field in fmap json
+                for fmapNifti in fmapN:
+                    if not path.exists(fmapNifti.filename.replace('.nii.gz', '_orig.json')):
+                        f = fmapNifti.path.replace('.nii.gz', '.json')
 
-                            rename(f, f.replace('.json', '_orig.json'))
+                        with open(f, 'r') as file:
+                            j = json.load(file)
 
-                            with open(f, 'w') as file:
-                                json.dump(j, file, indent=2)
+                        j['IntendedFor'] = [f.replace("\\", "/") for f in funcNiftisRelPaths]
+
+                        rename(f, f.replace('.json', '_orig.json'))
+
+                        with open(f, 'w') as file:
+                            json.dump(j, file, indent=2)
         
     '''add a function to check, if all the intended for is here, if so, return fmriprep'''
     
@@ -287,36 +298,40 @@ def fmrprep_intended_for(sub_ses_list, bidslayout):
 def link_vistadisplog(basedir, sub_ses_list, bids_layout):
     
     
-    taskdict=  {}
+    
     baseP=os.path.join(basedir,'BIDS','sourcedata','vistadisplog')
-    for index, item in enumerate(tasks):
-        taskdict[item]=1
-        logger.debug(taskdict)
+
     
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
         ses  = row.ses.zfill(3)
         RUN  = row.RUN
-        tasks= bids_layout.get_tasks(subject=sub, session=ses)
-        matFiles = np.sort(glob(path.join(baseP, f'sub-{sub}', f'ses-{ses}', '20*.mat')))
-        logger.debug(f"\n {path.join(baseP, f'sub-{sub}', f'ses-{ses}', '20*.mat')}")
-        logger.debug(f'\n {matFiles}')
-        for matFile in matFiles:
+        func = row.func
+        if RUN ==True and func == True:
+            taskdict=  {}
+            tasks= bids_layout.get_tasks(subject=sub, session=ses)
+            for index, item in enumerate(tasks):
+                taskdict[item]=1
+                logger.debug(taskdict)
+            matFiles = np.sort(glob(path.join(baseP, f'sub-{sub}', f'ses-{ses}', '20*.mat')))
+            logger.debug(f"\n {path.join(baseP, f'sub-{sub}', f'ses-{ses}', '20*.mat')}")
+            logger.debug(f'\n {matFiles}')
+            for matFile in matFiles:
 
-            stimName = loadmat(matFile, simplify_cells=True)['params']['loadMatrix']
-            print(stimName)
-            for key in taskdict:
-                logger.debug(key)
-                if key[2:] in stimName:
-                    if 'tr-2' in stimName:
-                        linkName = path.join(path.dirname(matFile), f'{sub}_{ses}_task-{key}_run-0{taskdict[key]}_params.mat')
-                        
-                        taskdict[key] += 1
+                stimName = loadmat(matFile, simplify_cells=True)['params']['loadMatrix']
+                print(stimName)
+                for key in taskdict:
+                    logger.debug(key)
+                    if key[2:] in stimName:
+                        if 'tr-2' in stimName:
+                            linkName = path.join(path.dirname(matFile), f'{sub}_{ses}_task-{key}_run-0{taskdict[key]}_params.mat')
+                            
+                            taskdict[key] += 1
 
-                if path.islink(linkName):
-                    unlink(linkName)
+                    if path.islink(linkName):
+                        unlink(linkName)
 
-                symlink(path.basename(matFile), linkName)
+                    symlink(path.basename(matFile), linkName)
 
     return True
 def prepare_prf_input(basedir, container, config_path, sub_ses_list, bids_layout ,run_lc):

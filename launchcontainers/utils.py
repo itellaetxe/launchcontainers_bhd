@@ -6,7 +6,7 @@ import logging
 import pandas as pd
 import os
 import shutil
-
+import sys
 logger=logging.getLogger("GENERAL")
 
 # %% parser
@@ -22,7 +22,7 @@ def get_parser():
     parser = argparse.ArgumentParser(
         description= """
         This python program helps you analysis MRI data through different containers,
-        Before you make use of this program, please edit the required config files to match your analysis demand. \n
+        Before you make use of this program, please prepare the environment, edit the required config files, to match your analysis demand. \n
         SAMPLE CMD LINE COMMAND \n\n
         ###########STEP1############# \n
         To begin the analysis, you need to first prepare and check the input files by typing this command in your bash prompt:
@@ -40,14 +40,14 @@ def get_parser():
         "-lcc",
         "--lc_config",
         type=str,
-        default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/BIDS/lc_config.yaml",
+        default="",
         help="path to the config file",
     )
     parser.add_argument(
         "-ssl",
         "--sub_ses_list",
         type=str,
-        default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/BIDS/subSesList.txt",
+        default="",
         help="path to the subSesList",
     )
     parser.add_argument(
@@ -81,10 +81,13 @@ def get_parser():
         action="store_true",
         help="if you want to find out what is happening of particular step, this will print you more detailed information",
                          )    
+    if len(sys.argv)==1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
     
     parse_dict = vars(parser.parse_args())
     parse_namespace= parser.parse_args()
-
+    
     logger.info("\n"+
         "#####################################################\n" +
         "This is the result from get_parser()\n"+

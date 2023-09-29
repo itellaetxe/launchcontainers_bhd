@@ -33,13 +33,34 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     host=lc_config['general']['host']
     config_name=lc_config['container_specific'][container]['config_name']
     analysis_name= lc_config['general']['analysis_name']
-    analysis_num=1
+    
     found_analysis_dir=False
     run_lc = parser_namespace.run_lc
     
     force= force and (not run_lc)    
     
     version = lc_config["container_specific"][container]["version"]    
+    # get the analysis folder information
+    container_foler = os.path.join(basedir, 'BIDS','derivatives',f'{container}')
+    entities= os.listdir(container_foler)
+    
+    analysis_folders= [dir_ana for dir_ana in entities if os.path.isdir(os.path.join(container_foler,dir_ana))]
+    
+    if not analysis_folders:
+        analysis_num=1
+    else:
+        newest_analysis_dir= max(analysis_folders, key= lambda d: os.path.getmtime(os.path.join(container_foler,d)))
+        logger.debug(f'this is the newest analysis dir we get {newest_analysis_dir}')
+        
+        detected_analysis_name= newest_analysis_dir.split('/')[-1].split('-')[1]
+        detected_analysis_num= newest_analysis_dir.split('/')[-1].split('-')[2]
+
+        if not detected_analysis_name == analysis_name:
+            analysis_num=1
+            logger.debug(f'detected analysis name is {detected_analysis_name}, it is different from what you provide in lc_config yaml {analysis_name}')
+        else:
+            analysis_num=int(detected_analysis_num)
+    
     # Get the input config files from parser  
     original_files = [parser_namespace.lc_config, parser_namespace.sub_ses_list] + parser_namespace.container_specific_config
     
@@ -48,7 +69,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         # if it is exit, check if the config information of lc_yaml, the looping information of subseslist and contianer specific config are the smae
         # if either one of them have any tiny mistake, make a new analysis folder, and copy them to there, and give a note: this is new thing, different from 
         # what you are indicating, we add a new thing for your
-    while not found_analysis_dir and analysis_num <100:
+    while not found_analysis_dir and analysis_num <100 and not run_lc:
         
         
         Dir_analysis = os.path.join(
@@ -131,7 +152,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
             else:
                 analysis_num+=1 
 
-        if not os.path.isdir(Dir_analysis) and not run_lc:
+        if not os.path.isdir(Dir_analysis):
             
             os.makedirs(Dir_analysis)
             do.copy_file(parser_namespace.lc_config, path_to_analysis_lc_config, force) 
@@ -140,7 +161,25 @@ def prepare_analysis_folder(parser_namespace, lc_config):
                 do.copy_file(orig_config_json, copy_config_json, force)    
             logger.debug(f'\n the analysis folder is not here, break the while loop') 
             break
-    
+    if run_lc:
+        Dir_analysis= os.path.join(container_foler, newest_analysis_dir)
+        
+        path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
+        path_to_analysis_sub_ses_list = os.path.join(Dir_analysis, "subSesList.txt")
+        
+        if container  not in ['rtp-pipeline', 'fmriprep']:    
+            path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}.json")]
+        if container == 'rtp-pipeline':
+            path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}",+".json"), os.path.join(Dir_analysis, "tractparams.csv")]
+        if container == 'fmriprep':
+            path_to_analysis_container_specific_config=[]
+        
+        Dict_configs_under_analysisfolder={
+        'new_lc_config_path':path_to_analysis_lc_config,
+        'new_sub_ses_list_path':path_to_analysis_sub_ses_list,
+        'new_container_specific_config_path': path_to_analysis_container_specific_config
+            }
+        
     logger.debug(f'\n thisis the analysis folder that goes to other places:\n {Dir_analysis}')
     
     #sys.exit(1)
@@ -304,7 +343,7 @@ def link_vistadisplog(basedir, sub_ses_list, bids_layout):
     
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
-        ses  = row.ses.zfill(3)
+        ses  = row.ses
         RUN  = row.RUN
         func = row.func
         if RUN ==True and func == True:
@@ -343,11 +382,18 @@ def prepare_prf_input(basedir, container, config_path, sub_ses_list, bids_layout
         # copy the container specific information to the prfprepare.json.
         # copy the information in subseslist to the prfprepare.json
         # question, in this way, do we still need the config.json???
-            # i mean yes, but there will always to better options
-        
-        sub_list=sub_ses_list['sub'].tolist()
-        ses_list=sub_ses_list['ses'].tolist()
-
+        sub_list=[]
+        ses_list=[]
+        for row in sub_ses_list.itertuples(index=True, name='Pandas'):
+            sub  = row.sub
+            ses  = row.ses
+            RUN  = row.RUN
+            func = row.func
+            logger.debug(f'\n run is {RUN},type run is {type(RUN)} func is {func} --{sub}-{ses}' )
+            if RUN == "True" and func == "True":    # i mean yes, but there will always to better options
+                sub_list.append(sub)
+                ses_list.append(ses)
+        logger.debug(f'\nthis is sublist{sub_list}, and ses list {ses_list}\n')        
         with open(config_path, 'r') as config_json:
             j= json.load(config_json)
         

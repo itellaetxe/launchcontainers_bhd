@@ -23,7 +23,6 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
     jobqueue_config= new_lc_config['host_options'][host]
 
     envcmd= f"module load {jobqueue_config['sin_ver']} "\
-            f"export SINGULARITYENV_TMPDIR={jobqueue_config['tmpdir']} "\
     
     if container in ['anatrois', 'rtppreproc','rtp-pipeline']:
         logger.info("\n"+ f'start to generate the DWI PIPELINE command')
@@ -122,7 +121,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 f'singularity run '\
                 f'-H {homedir} '\
                 f'-B {basedir}/derivatives/fmriprep:/flywheel/v0/input '\
-                f'-B {basedir}/derivatives/:/flywheel/v0/output '\
+                f'-B {Dir_analysis}:/flywheel/v0/output '\
                 f'-B {basedir}/BIDS:/flywheel/v0/BIDS '\
                     f'-B {Dir_analysis}/{config_name}.json:/flywheel/v0/config.json '\
 	            f'-B {basedir}/license/license.txt:/opt/freesurfer/.license '\
@@ -133,7 +132,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 f'singularity run '\
                 f'-H {homedir} '\
                 f'-B {basedir}/derivatives/fmriprep:/flywheel/v0/input '\
-                f'-B {basedir}/derivatives/:/flywheel/v0/output '\
+                f'-B {Dir_analysis}:/flywheel/v0/output '\
                 f'-B {basedir}/BIDS:/flywheel/v0/BIDS '\
                     f'-B {Dir_analysis}/{config_name}.json:/flywheel/v0/config.json '\
 	            f'-B {basedir}/license/license.txt:/opt/freesurfer/.license '\
@@ -182,7 +181,7 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
     run_lcs=[]
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
-        ses  = row.ses.zfill(3)
+        ses  = row.ses
         RUN  = row.RUN
         dwi  = row.dwi
         if RUN=="True":
@@ -206,17 +205,22 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
             if not run_lc:
                 # this cmd is only for print the command 
                 command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
+                if not (host == 'local'):
+                    
+                    logger.critical(
+                                f"\n the cluster job script is {cluster.job_script()}"
+                                )
+                
                 logger.critical("\n"
                                     +f"--------run_lc is false, you are running the prepare mode of launchcontiner"
-                                    +f"\n the cluster job script is {cluster.job_script()}"
                                     +f"\n the command is for subject-{sub}, and session- {ses}"
                                     +f"\n the command will be run on the {host}"
                                     +f"\n\n{command}\n\n"
                                     +"Please check: "
                                     +"\n (1) launchcontainer prepare the input properly"
                                     +"\n (2) the commandline command for each subject is properly formed, you can simply copy the command \
-                                    for one subject and launch it on the prompt before you launch multiple subjects \
-                                        \n Onec the check is done, launch the jobs by adding --run_lc"
+                                    for one subject and launch it on the prompt before you launch multiple subjects"
+                                    +"\n Onec the check is done, launch the jobs by adding --run_lc"
                                     )
                 if new_lc_config['general']['container']=='fmriprep':
                     logger.critical('\n'+ 'fmriprep now can not deal with session specification, so the analysis are runing on all sessions of the subject you are specifying')

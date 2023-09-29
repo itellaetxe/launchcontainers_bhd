@@ -57,7 +57,7 @@ general:
   force: false
   analysis_name: '' # you can put a str here to give a brief description of your analysis, it will be called anaysis-{yourinput}-{number count} under derivative folder
   host: local #valid options: local, BCBL, DIPC.
-  print_command_only: false  
+  print_command_only: True 
   
 container_specific:
 # Add the containers and options you want to run
@@ -90,7 +90,7 @@ container_specific:
     # This code will create them automatically if they are not there
     # TODO: make it a function
     rpe: ture
-    # Find where the input files are. It will take the T1 and the brain mask from here
+    # Find where the input files are. It will take the T1 and the brainmask from here
     #
     #this thing was pretoolfs originally
     precontainer_anat: anatrois_4.5.2-7.3.2
@@ -98,7 +98,7 @@ container_specific:
     config_name: config
   rtp-pipeline:
     version: 4.4.1
-    # Find where the input files are. It will take the T1 and the brain mask from here        
+    # Find where the input files are. It will take the T1 and the brainmask from here        
     precontainer_anat: anatrois_4.2.7-7.1.1
     anat_analysis_num: "01"
     precontainer_preproc: rtppreproc_1.2.0-3.0.3
@@ -162,6 +162,7 @@ host_options:
       tmpdir: /scratch/tlei/tmp
    
     local:
+      sin_ver: singularity/3.5.2
       manager: local
       threads_per_worker: 3
       processes: False

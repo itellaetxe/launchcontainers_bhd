@@ -1,0 +1,22 @@
+{
+    "subjectName": "n001",
+    "sessionName": "all",
+    "tasks"      : "all",
+    "solver"     : "vista",
+    "isPRFSynthData" : false,
+    "options": {
+    	"prfprepareAnalysis": "06",
+        "model"             : "one gaussian",
+        "grid"              : false,
+        "wsearch"           : "5",
+        "detrend"           : 1,
+        "keepAllPoints"     : false,
+        "numberStimulusGridPoints": 101,
+	"obtainPreds"       : true,
+	"fixcssexp"         : 0
+    },
+    "stimulus": {
+        "stimulus_diameter" : 18
+    }
+}
+

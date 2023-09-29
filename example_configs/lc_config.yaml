@@ -89,7 +89,7 @@ container_specific:
     # Old dcm2nixx will not create empty bvec and bval files if there was an acquisition with just b0-s
     # This code will create them automatically if they are not there
     # TODO: make it a function
-    rpe: ture
+    rpe: true
     # Find where the input files are. It will take the T1 and the brainmask from here
     #
     #this thing was pretoolfs originally

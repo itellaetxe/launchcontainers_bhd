@@ -40,14 +40,14 @@ def get_parser():
         "-lcc",
         "--lc_config",
         type=str,
-        default="",
+        #default="",
         help="path to the config file",
     )
     parser.add_argument(
         "-ssl",
         "--sub_ses_list",
         type=str,
-        default="",
+        #default="",
         help="path to the subSesList",
     )
     parser.add_argument(

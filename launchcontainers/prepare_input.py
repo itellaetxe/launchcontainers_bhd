@@ -41,7 +41,11 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     
     version = lc_config["container_specific"][container]["version"]    
     # get the analysis folder information
+    
     container_folder = os.path.join(basedir, 'BIDS','derivatives',f'{container}')
+    if not os.path.isdir(container_folder):
+        os.makedirs(container_folder)
+    
     entities= os.listdir(container_folder)
     
     analysis_folders= [dir_ana for dir_ana in entities if os.path.isdir(os.path.join(container_folder,dir_ana))]

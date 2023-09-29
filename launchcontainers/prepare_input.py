@@ -166,7 +166,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
             logger.debug(f'\n the analysis folder is not here, break the while loop') 
             break
     if run_lc:
-        Dir_analysis= os.path.join(container_foler, newest_analysis_dir)
+        Dir_analysis= os.path.join(container_folder, newest_analysis_dir)
         
         path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
         path_to_analysis_sub_ses_list = os.path.join(Dir_analysis, "subSesList.txt")

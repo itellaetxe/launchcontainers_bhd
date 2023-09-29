@@ -88,7 +88,7 @@ def initiate_cluster(jobqueue_config, n_job):
             "You can find a jobqueue YAML example in the pySPFM/jobqueue.yaml file."
         )
         cluster_by_config = None
-   # print(f"----------------This is the self report of funtion initiate_cluster()\n, the cluster was defined as the {jobqueue_config['manager']}cluster \n")
+   # print(f"----------------This is the self report of function initiate_cluster()\n, the cluster was defined as the {jobqueue_config['manager']}cluster \n")
    # print(f"----------------------------The cluster job_scipt is  {cluster_by_config.job_script()} \n")
    # print(f"----check for job scale,  the number of jobs is {n_job}")
    # print(f"-----under of initiate_cluster() report the cluster is {cluster_by_config}")

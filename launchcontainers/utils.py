@@ -27,11 +27,11 @@ def get_parser():
         ###########STEP1############# \n
         To begin the analysis, you need to first prepare and check the input files by typing this command in your bash prompt:
         python path/to/the/launchcontianer.py -lcc path/to/launchcontainer_config.yaml -ssl path/to/subject_session_info.txt 
-        -cc path/to/contianer_specific_config.json \n
+        -cc path/to/container_specific_config.json \n
         ##--cc note, for the case of rtp-pipeline, you need to input two paths, one for config.json and one for tractparm.csv \n\n
         ###########STEP2############# \n
         After you have done step 1, all the config files are copied to BIDS/sub/ses/analysis/ directory 
-        When you are confident everthing is there, press up arrow to recall the command in STEP 1, and just add --run_lc after it. \n\n  
+        When you are confident everything is there, press up arrow to recall the command in STEP 1, and just add --run_lc after it. \n\n  
         
         We add lots of check in the script to avoid program breakdowns. if you found new bugs while running, do not hesitate to contact us"""
     , formatter_class=RawDescriptionHelpFormatter)
@@ -64,8 +64,8 @@ def get_parser():
     parser.add_argument('--run_lc', action='store_true',
                         help= "if you type --run_lc, the entire program will be launched, jobs will be send to \
                         cluster and launch the corresponding container you suggest in config_lc.yaml. \
-                        We suggest that the first time you run launchcontainer.py, leave this arguement empty. \
-                        then the launchcontainer.py will preapre \
+                        We suggest that the first time you run launchcontainer.py, leave this argument empty. \
+                        then the launchcontainer.py will prepare \
                         all the input files for you and print the command you want to send to container, after you \
                         check all the configurations are correct and ready, you type --run_lc to make it run"
                         )
@@ -147,7 +147,7 @@ def setup_logger():
     # instantiate logger
     logger=logging.getLogger()
     # define handler and formatter
-    handler = logging.StreamHandler() #TODO: this shoul dbe implement to filehandler also , so that we have lc logs
+    handler = logging.StreamHandler() #TODO: this should dbe implement to filehandler also , so that we have lc logs
     formatter= logging.Formatter("%(asctime)s %(levelname)8s  %(module)8s:%(funcName)s:%(lineno)d %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
     # add formatter to handler
     handler.setFormatter(formatter)
@@ -170,7 +170,7 @@ def copy_file(src_file, dst_file, force):
         if ((not os.path.isfile(dst_file)) or (force)) or (os.path.isfile(dst_file) and force):
             shutil.copy(src_file, dst_file)
             logger.info("\n"+
-                f"---{src_file} has been succesfully copied to {os.path.dirname(src_file)} directory \n"+
+                f"---{src_file} has been successfully copied to {os.path.dirname(src_file)} directory \n"+
                 f"---REMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
             )
         elif os.path.isfile(dst_file) and not force:

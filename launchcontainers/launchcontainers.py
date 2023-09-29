@@ -69,7 +69,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 
         nthreads=new_lc_config["container_specific"][container]['nthreads']
         mem=new_lc_config["container_specific"][container]['mem'] 
-        fs_lisense=new_lc_config["container_specific"][container]['fs_lisense']
+        fs_license=new_lc_config["container_specific"][container]['fs_license']
         sif_path=  new_lc_config['general']['sif_path']  
         container_path= os.path.join(sif_path, f"{container}_{new_lc_config['container_specific'][container]['version']}.sif")
         precommand=f'mkdir -p {homedir}; '\
@@ -78,7 +78,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
         if "local" == host:
             cmd = envcmd + precommand+f'singularity run '\
                     f'-H {homedir} '\
-                    f'-B {basedir}:/base -B {fs_lisense}:/license '\
+                    f'-B {basedir}:/base -B {fs_license}:/license '\
                     f'--cleanenv {container_path} '\
                     f'-w {Dir_analysis} '\
                     f'/base/BIDS {Dir_analysis} participant '\
@@ -96,7 +96,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
         if host in ['BCBL','DIPC']:
             cmd = precommand+f'singularity run '\
                     f'-H {homedir} '\
-                    f'-B {basedir}:/base -B {fs_lisense}:/license '\
+                    f'-B {basedir}:/base -B {fs_license}:/license '\
                     f'--cleanenv {container_path} '\
                     f'-w {Dir_analysis} '\
                     f'/base/BIDS {Dir_analysis} participant '\
@@ -140,7 +140,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
 
     if cmd is None:
         logger.error("\n"+ f'the DWI PIPELINE command is not assigned, please check your config.yaml[general][host] session\n')
-        raise ValueError('cmd is not defiend, aborting')
+        raise ValueError('cmd is not defined, aborting')
     if run_lc:
         sp.run(cmd, shell=True)
     
@@ -218,12 +218,12 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
                                     +f"\n\n{command}\n\n"
                                     +"Please check: "
                                     +"\n (1) launchcontainer prepare the input properly"
-                                    +"\n (2) the commandline command for each subject is properly formed, you can simply copy the command \
+                                    +"\n (2) the command line command for each subject is properly formed, you can simply copy the command \
                                     for one subject and launch it on the prompt before you launch multiple subjects"
                                     +"\n Onec the check is done, launch the jobs by adding --run_lc"
                                     )
                 if new_lc_config['general']['container']=='fmriprep':
-                    logger.critical('\n'+ 'fmriprep now can not deal with session specification, so the analysis are runing on all sessions of the subject you are specifying')
+                    logger.critical('\n'+ 'fmriprep now can not deal with session specification, so the analysis are running on all sessions of the subject you are specifying')
 
    
 
@@ -260,9 +260,9 @@ def main():
     
     #set the logging level to get the command
     do.setup_logger()    
-    print_command_only=lc_config["general"]["print_command_only"] #TODO this should be defiend using -v and -print command only
+    print_command_only=lc_config["general"]["print_command_only"] #TODO this should be defined using -v and -print command only
     
-    # set logger message level TODO: this should be implememt to be changeable for future 
+    # set logger message level TODO: this should be implement to be changeable for future 
     if print_command_only:    
         logger.setLevel(logging.CRITICAL)
     if verbose:
@@ -271,7 +271,7 @@ def main():
         logger.setLevel(logging.DEBUG)
     
     # prepare file and launch containers
-    # first of all prepare the analysis folder: it create you the analysis folder automatically so that you are not messing up with different anlysis
+    # first of all prepare the analysis folder: it create you the analysis folder automatically so that you are not messing up with different analysis
     Dir_analysis, Dict_configs_under_analysisfolder = prepare.prepare_analysis_folder(parser_namespace, lc_config)
     
     # the config information that goes to the container

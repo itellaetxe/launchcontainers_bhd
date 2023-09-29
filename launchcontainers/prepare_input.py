@@ -19,11 +19,11 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     '''
     this function is the very very first step of everything, it is IMPORTANT, 
     it will provide a check if your desired analysis has been running before
-    and it will help you keep track of your input parameteres so that you know what you are doing in your analysis    
+    and it will help you keep track of your input parameters so that you know what you are doing in your analysis    
 
     the option force will not be useful at the analysis_folder level, if you insist to do so, you need to delete the old analysis folder by hand
     
-    after determing the analysis folder, this function will copy your input configs to the analysis folder, and it will read only from there
+    after determine the analysis folder, this function will copy your input configs to the analysis folder, and it will read only from there
     '''
     # read parameters from lc_config
     
@@ -41,15 +41,15 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     
     version = lc_config["container_specific"][container]["version"]    
     # get the analysis folder information
-    container_foler = os.path.join(basedir, 'BIDS','derivatives',f'{container}')
-    entities= os.listdir(container_foler)
+    container_folder = os.path.join(basedir, 'BIDS','derivatives',f'{container}')
+    entities= os.listdir(container_folder)
     
-    analysis_folders= [dir_ana for dir_ana in entities if os.path.isdir(os.path.join(container_foler,dir_ana))]
+    analysis_folders= [dir_ana for dir_ana in entities if os.path.isdir(os.path.join(container_folder,dir_ana))]
     
     if not analysis_folders:
         analysis_num=1
     else:
-        newest_analysis_dir= max(analysis_folders, key= lambda d: os.path.getmtime(os.path.join(container_foler,d)))
+        newest_analysis_dir= max(analysis_folders, key= lambda d: os.path.getmtime(os.path.join(container_folder,d)))
         logger.debug(f'this is the newest analysis dir we get {newest_analysis_dir}')
         
         detected_analysis_name= newest_analysis_dir.split('/')[-1].split('-')[1]
@@ -66,7 +66,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     
 
     # check: if the analysis folder is already exit
-        # if it is exit, check if the config information of lc_yaml, the looping information of subseslist and contianer specific config are the smae
+        # if it is exit, check if the config information of lc_yaml, the looping information of subseslist and container specific config are the same
         # if either one of them have any tiny mistake, make a new analysis folder, and copy them to there, and give a note: this is new thing, different from 
         # what you are indicating, we add a new thing for your
     while not found_analysis_dir and analysis_num <100 and not run_lc:
@@ -106,7 +106,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         
         logger.debug (f'\n the config.json is {path_to_analysis_container_specific_config}')
         
-        # compare if all the diles are the same
+        # compare if all the files are the same
         general_input= lc_config["general"]
         container_input=lc_config["container_specific"][container]
         logger.debug(host)
@@ -180,7 +180,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         'new_container_specific_config_path': path_to_analysis_container_specific_config
             }
         
-    logger.debug(f'\n thisis the analysis folder that goes to other places:\n {Dir_analysis}')
+    logger.debug(f'\n this is the analysis folder that goes to other places:\n {Dir_analysis}')
     
     #sys.exit(1)
     #return  Dir_analysis
@@ -204,7 +204,7 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
     """
     logger.info("\n"+
                 "#####################################################\n"
-                +"---starting to preprare the input files for analysis\n")
+                +"---starting to prepare the input files for analysis\n")
     
     container = lc_config["general"]["container"]
     version = lc_config["container_specific"][container]["version"]
@@ -213,8 +213,8 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
     # first thing, if the container specific config is not correct, then not doing anything
     if len(parser_namespace.container_specific_config)==0:
                 logger.error("\n"
-                              +f"Input file error: the containerspecific config is not provided")
-                raise FileNotFoundError("Didn't input container_specific_config, please indicate it in your commandline flag -cc")
+                              +f"Input file error: the container specific config is not provided")
+                raise FileNotFoundError("Didn't input container_specific_config, please indicate it in your command line flag -cc")
     
     
     for row in df_subSes.itertuples(index=True, name="Pandas"):
@@ -267,7 +267,7 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
             
             else:
                 logger.error("\n"+
-                             f"***An error occured"
+                             f"***An error occurred"
                              +f"{container} is not created, check for typos or contact admin for singularity images\n"
                 )
 
@@ -279,7 +279,7 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
 
 def fmrprep_intended_for(sub_ses_list, bidslayout):
     '''
-    not imlement yet, thinkging how to smartly do the job
+    not implement yet, thinking how to smartly do the job
     '''
     layout= bidslayout
     #number_of_topups= fmriprep_configs['number_of_topups'] # a str

@@ -53,12 +53,12 @@ def force_symlink(file1, file2, force):
                              +"***An error occured \n" 
                              +"input files are missing, please check \n")
                 pass
-            # if raise [erron 17] the symlink exist, we don't force and print that we keep the original one
+            # if raise [errno 17] the symlink exist, we don't force and print that we keep the original one
             elif n.errno == errno.EEXIST:
                 logger.warning("\n"+ 
                            f"--- force is {force}, symlink exist, remain old \n")
             else:
-                logger.error("\n"+ "Unknow error, break the program")
+                logger.error("\n"+ "Unknown error, break the program")
                 raise n
     # if we force to overwrite
     if force:
@@ -66,7 +66,7 @@ def force_symlink(file1, file2, force):
             # try the command, if the file are correct and symlink not exist, it will create one
             os.symlink(file1, file2)
             logger.info("\n"
-                       +f"--- force is {force}, symlink empty, newlink created successfully\n ")
+                       +f"--- force is {force}, symlink empty, new link created successfully\n ")
         # if the symlink exist, and in this case we force a overwrite
         except OSError as e:
             if e.errno == errno.EEXIST:
@@ -75,7 +75,7 @@ def force_symlink(file1, file2, force):
                            +f"--- force is {force}, symlink exist, unlink\n ")
                 os.symlink(file1, file2)
                 logger.warning("\n"
-                           +"--- overwrite the exsting symlink")
+                           +"--- overwrite the existing symlink")
                 logger.info("\n"
                            +"-----------------Overwrite success -----------------------\n")
             elif e.errno == 2:
@@ -140,7 +140,7 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
     required_gz_files = set(f"fs/ROIs/{file}.nii.gz" for file in required_rois)
     logger.info("\n"
                 +f"---The following are the ROIs in fs.zip file: \n {zip_gz_files} \n"
-                +f"---there are {len(zip_gz_files)} .nii.gz files in fs.zip from anarois output\n"
+                +f"---there are {len(zip_gz_files)} .nii.gz files in fs.zip from anatrois output\n"
                 +f"---There are {len(required_gz_files)} ROIs that are required to run RTP-PIPELINE\n")
     if required_gz_files.issubset(zip_gz_files):
         logger.info("\n"
@@ -190,8 +190,8 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
     container = lc_config["general"]["container"]    
     
         # if force is False, then we don't want to overwrite anything
-        # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
-        # if force is true and we do run_lc, then we will never overwritte
+        # if force is true, and we didn't run_lc(in the prepare mode), we will do the overwrite and so on
+        # if force is true and we do run_lc, then we will never overwrite
     force = (lc_config["general"]["force"])
     force = force and (not run_lc)
      
@@ -244,13 +244,13 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
                 if answer in "y":
                     srcFileT1 = zips_new[-1]
                 else:
-                    logger.error("\n"+"An error occured"
+                    logger.error("\n"+"An error occurred"
                                +zips_new +"\n"
                                +"no target preanalysis.zip file exist, please check the config_lc.yaml file")
                     sys.exit(1)
         elif len(zips) > 1:
             logger.info("\n"
-                       +f"There are more than one zip file in {srcAnatPath}, selecting the lastest one")
+                       +f"There are more than one zip file in {srcAnatPath}, selecting the latest one")
             srcFileT1 = zips[-1]
         else:
             srcFileT1 = zips[0]
@@ -304,7 +304,7 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses):
                        +annotfile + " does not exist")
         if not os.path.exists(os.path.join(dstdstDir_input, "annotfile")):
             os.makedirs(os.path.join(dstdstDir_input, "annotfile"))
-    # seems not implementd
+    # seems not implemented
     if mniroizip:
         if os.path.isfile(mniroizip):
             logger.info("\n"
@@ -349,7 +349,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     Parameters
     ----------
     parser_namespace: parser obj
-        it contains all the input arguement in the parser
+        it contains all the input argument in the parser
 
     lc_config : dict
         the lc_config dictionary from _read_config
@@ -377,8 +377,8 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     container = lc_config["general"]["container"]
     force = (lc_config["general"]["force"])
     # if force is False, then we don't want to overwrite anything
-    # if force is true, and we didn't run_lc(in the preparemode), we will do the overwritte and so on
-    # if force is true and we do run_lc, then we will never overwritte
+    # if force is true, and we didn't run_lc(in the prepare mode), we will do the overwrite and so on
+    # if force is true and we do run_lc, then we will never overwrite
     force=force and (not run_lc)
     # container specific:
     precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
@@ -395,7 +395,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     # define base directory for particular subject and session
     basedir_subses = os.path.join(basedir, "BIDS", "sub-" + sub, "ses-" + ses)
 
-    # the source directory that stores the output of previous anatorois analysis
+    # the source directory that stores the output of previous anatrois analysis
     srcDirFs = os.path.join(
         basedir,
         "BIDS",
@@ -410,7 +410,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
     # define the source file, this is where symlink will point to
     # T1 file in anatrois output
     srcFileT1 = os.path.join(srcDirFs, "T1.nii.gz")
-    # brainmask file in anatrois output
+    # brain mask file in anatrois output
     srcFileMask = os.path.join(srcDirFs, "brainmask.nii.gz")
     # 3 dwi file that needs to be preprocessed, under BIDS/sub/ses/dwi
     # the nii.gz
@@ -480,14 +480,14 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
         srcFileDwi_bval_R = os.path.join(
             basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+rpe_dir+"_dwi.bval"
         )
-        # the reverse diretion bvec
+        # the reverse direction bvec
         srcFileDwi_bvec_R = os.path.join(
             basedir_subses, "dwi", "sub-" + sub + "_ses-" + ses + "_dir-"+rpe_dir+"_dwi.bvec"
         )
 
         # If bval and bvec do not exist because it is only b0-s, create them
         # (it would be better if dcm2niix would output them but...)
-        # buildthe img matrix according to the shape of nii.gz
+        # build the img matrix according to the shape of nii.gz
         img = nib.load(srcFileDwi_nii_R)
         volumes = img.shape[3]
         # if one of the bvec and bval are not there, re-write them
@@ -507,7 +507,7 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses):
             f.write("\n")
             f.close()
 
-    # creat input and output directory for this container, the dstDir_output should be empty, the dstdstDir_input should contains all the symlinks
+    # create input and output directory for this container, the dstDir_output should be empty, the dstdstDir_input should contains all the symlinks
     dstdstDir_input = os.path.join(
         Dir_analysis,
         "sub-" + sub,

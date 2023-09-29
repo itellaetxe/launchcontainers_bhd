@@ -183,17 +183,17 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
     run_lcs=[]
     
     if not run_lc:
-        logger.critical(f"\nlaunchcontainers.py was run in PREPARATION mode (without option --run_lc)\n" /
-                            f"Please check that: \n" /
-                            f"    (1) launchcontainers.py prepared the input data properly\n" /
-                            f"    (2) the command created for each subject is properly formed\n" /
-                            f"         (you can copy the command for one subject and launch it " /
-                            f"          on the prompt before you launch multiple subjects\n" /
+        logger.critical(f"\nlaunchcontainers.py was run in PREPARATION mode (without option --run_lc)\n" \
+                            f"Please check that: \n" \
+                            f"    (1) launchcontainers.py prepared the input data properly\n" \
+                            f"    (2) the command created for each subject is properly formed\n" \
+                            f"         (you can copy the command for one subject and launch it " \
+                            f"          on the prompt before you launch multiple subjects\n" \
                             f"    (3) Once the check is done, launch the jobs by adding --run_lc to the original command.\n"
         )
         if not (host == 'local'):
             logger.critical(
-                        f"The cluster job script for this command is:\n" /
+                        f"The cluster job script for this command is:\n" \
                         f"{cluster.job_script()}"
                         )
 
@@ -223,7 +223,7 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
             if not run_lc:
                 # this cmd is only for print the command 
                 command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
-                logger.critical(f"COMMAND for subject-{sub}, and session-{ses}:\n" /
+                logger.critical(f"COMMAND for subject-{sub}, and session-{ses}:\n" \
                                 f"{command}\n\n"
                                 )
                 if new_lc_config['general']['container']=='fmriprep':

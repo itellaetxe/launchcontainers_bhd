@@ -77,7 +77,10 @@ def initiate_cluster(jobqueue_config, n_job):
                                          job_extra_directives = ["--export=ALL"])
         cluster_by_config.scale(jobs=n_job)
     elif "local" in jobqueue_config["manager"]:
+        logger.debug("defining local cluster")
         cluster_by_config=LocalCluster()
+
+        cluster_by_config.scale(jobs=n_job)
     else:
         logger.warning(
             "dask configuration wasn't detected, "

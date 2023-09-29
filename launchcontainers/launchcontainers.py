@@ -164,12 +164,14 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
     host = new_lc_config["general"]["host"]
     jobqueue_config= new_lc_config["host_options"][host]
     logger.debug(f'\n,, this is the job_queue config {jobqueue_config}')
+    
     force = new_lc_config["general"]["force"]    
     
     # Count how many jobs we need to launch from  sub_ses_list
     n_jobs = np.sum(sub_ses_list.RUN == "True")
 
     client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
+    
     logger.info("---this is the cluster and client\n"
                 +f"{client} \n cluster: {cluster} \n")
 
@@ -179,6 +181,22 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
     Dir_analysiss=[]
     paths_to_analysis_config_json=[]
     run_lcs=[]
+    
+    if not run_lc:
+        logger.critical(f"\nlaunchcontainers.py was run in PREPARATION mode (without option --run_lc)\n" /
+                            f"Please check that: \n" /
+                            f"    (1) launchcontainers.py prepared the input data properly\n" /
+                            f"    (2) the command created for each subject is properly formed\n" /
+                            f"         (you can copy the command for one subject and launch it " /
+                            f"          on the prompt before you launch multiple subjects\n" /
+                            f"    (3) Once the check is done, launch the jobs by adding --run_lc to the original command.\n"
+        )
+        if not (host == 'local'):
+            logger.critical(
+                        f"The cluster job script for this command is:\n" /
+                        f"{cluster.job_script()}"
+                        )
+
     for row in sub_ses_list.itertuples(index=True, name='Pandas'):
         sub  = row.sub
         ses  = row.ses
@@ -205,23 +223,9 @@ def launchcontainer(Dir_analysis, new_lc_config, sub_ses_list, Dict_configs_unde
             if not run_lc:
                 # this cmd is only for print the command 
                 command= generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
-                if not (host == 'local'):
-                    
-                    logger.critical(
-                                f"\n the cluster job script is {cluster.job_script()}"
+                logger.critical(f"COMMAND for subject-{sub}, and session-{ses}:\n" /
+                                f"{command}\n\n"
                                 )
-                
-                logger.critical("\n"
-                                    +f"--------run_lc is false, you are running the prepare mode of launchcontiner"
-                                    +f"\n the command is for subject-{sub}, and session- {ses}"
-                                    +f"\n the command will be run on the {host}"
-                                    +f"\n\n{command}\n\n"
-                                    +"Please check: "
-                                    +"\n (1) launchcontainer prepare the input properly"
-                                    +"\n (2) the command line command for each subject is properly formed, you can simply copy the command \
-                                    for one subject and launch it on the prompt before you launch multiple subjects"
-                                    +"\n Onec the check is done, launch the jobs by adding --run_lc"
-                                    )
                 if new_lc_config['general']['container']=='fmriprep':
                     logger.critical('\n'+ 'fmriprep now can not deal with session specification, so the analysis are running on all sessions of the subject you are specifying')
 

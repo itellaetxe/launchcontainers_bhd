@@ -44,7 +44,7 @@ def generate_cmd(new_lc_config,sub,ses,Dir_analysis, path_to_analysis_config_jso
                 f"--bind /export:/export "\
                 f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
                 f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                f"--bind {path_to_analysis_config_json}:/flywheel/v0/config.json "\
+                f"--bind {path_to_analysis_config_json[0]}:/flywheel/v0/config.json "\
                 f"{sif_path} 2>> {logfilename}.e 1>> {logfilename}.o "
         if ("local" == host):
             cmd=envcmd+f"singularity run -e --no-home "\

@@ -42,7 +42,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     version = lc_config["container_specific"][container]["version"]    
     # get the analysis folder information
     
-    container_folder = os.path.join(basedir, 'BIDS','derivatives',f'{container}')
+    container_folder = os.path.join(basedir, 'BIDS','derivatives',f'{container}_{version}')
     if not os.path.isdir(container_folder):
         os.makedirs(container_folder)
     
@@ -77,10 +77,7 @@ def prepare_analysis_folder(parser_namespace, lc_config):
         
         
         Dir_analysis = os.path.join(
-        basedir,
-        "BIDS",
-        "derivatives",
-        f"{container}", ##########before , there is _{version}
+        container_folder, ##########before , there is _{version}
         f"analysis-{analysis_name}-{analysis_num:02d}",
                 )
         
@@ -227,6 +224,7 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
         RUN = row.RUN
         dwi = row.dwi
         
+        logger.info(f'dwi is {dwi}')
         logger.info("\n"
                     +"The current run is: \n"
                     +f"{sub}_{ses}_RUN-{RUN}_{container}_{version}\n")
@@ -252,9 +250,9 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
                 "output", "configs"
             )
             if not os.path.isdir(tmpdir):
-                os.mkdir(tmpdir)
+                os.makedirs(tmpdir)
             if not os.path.isdir(logdir):
-                os.mkdir(logdir)
+                os.makedirs(logdir)
             
             if "rtppreproc" in container:
                 csl.rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses)
@@ -267,6 +265,7 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
                 
                 csl.rtppipeline(parser_namespace, Dir_analysis,lc_config, sub, ses)
             elif "anatrois" in container:
+                logger.info('we do the anatrois')
                 csl.anatrois(parser_namespace, Dir_analysis,lc_config,sub, ses)
             
             else:

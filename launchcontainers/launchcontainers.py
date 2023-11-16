@@ -3,7 +3,6 @@ import subprocess as sp
 import numpy as np
 import logging
 # Dask imports
-from dask import delayed as delayed_dask
 from dask.distributed import progress
 
 # modules in lc
@@ -67,6 +66,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
     
 
     basedir = lc_config["general"]["basedir"]
+    bidsdir_name= lc_config["general"]["bidsdir_name"]
     container = lc_config["general"]["container"] 
     version = lc_config["container_specific"][container]["version"]
     analysis = lc_config["general"]["analysis"] 
@@ -96,7 +96,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
         if RUN=="True" and dwi=="True":
             tmpdir = os.path.join(
                 basedir,
-                "nifti",
+                bidsdir_name,
                 "derivatives",
                 f"{container}_{version}",
                 "analysis-" + analysis,
@@ -106,7 +106,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
             )
             logdir = os.path.join(
                 basedir,
-                "nifti",
+                bidsdir_name,
                 "derivatives",
                 f"{container}_{version}",
                 "analysis-" + analysis,
@@ -116,7 +116,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
             )
             backup_configs = os.path.join(
                 basedir,
-                "nifti",
+                bidsdir_name,
                 "derivatives",
                 f"{container}_{version}",
                 "analysis-" + analysis,
@@ -125,7 +125,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
                 "output", "configs"
             )
 
-            path_to_sub_derivatives=os.path.join(basedir,"nifti","derivatives",
+            path_to_sub_derivatives=os.path.join(basedir,bidsdir_name,"derivatives",
                                                  f"{container}_{version}",
                                                  f"analysis-{analysis}",
                                                  f"sub-{sub}",
@@ -174,8 +174,8 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
         futures = client.map(cmdrun,hosts,paths_to_subs_derivatives,paths_to_configs_json,sif_paths,logfilenames)
         progress(futures)
         results = client.gather(futures)
-        logger.ino(results)
-        logger.ino('###########')
+        logger.info(results)
+        logger.info('###########')
     
         client.close()
         cluster.close()

@@ -117,12 +117,14 @@ def check_tractparam(lc_config, sub, ses, tractparam_df):
 
     # Define the zip file
     basedir = lc_config["general"]["basedir"]
+    bidsdir_name= lc_config["general"]["bidsdir_name"]
     container = lc_config["general"]["container"]
     precontainerfs = lc_config["container_specific"][container]["precontainerfs"]
     preanalysisfs = lc_config["container_specific"][container]["preanalysisfs"]
+
     fs_zip = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         precontainerfs,
         "analysis-" + preanalysisfs,
@@ -175,6 +177,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     # define local variables from lc_config dict
     # general level variables:
     basedir = lc_config["general"]["basedir"]
+    bidsdir_name= lc_config["general"]["bidsdir_name"]
     container = lc_config["general"]["container"]
     force = (lc_config["general"]["force"])&(~run_lc)
     analysis = lc_config["general"]["analysis"]
@@ -196,7 +199,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
                    +f"########\n the sourceT1 file will be pre_fs\n#########\n")
         srcAnatPath = os.path.join(
             basedir,
-            "nifti",
+            bidsdir_name,
             "derivatives",
             precontainerfs,
             "analysis-" + preanalysisfs,
@@ -240,7 +243,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     else:
         srcFileT1 = os.path.join(
             basedir,
-            "nifti",
+            bidsdir_name,
             "sub-" + sub,
             "ses-" + ses,
             "anat",
@@ -250,7 +253,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     # define input output folder for this container
     dstdstDir_input = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         f"{container}_{version}",
         "analysis-" + analysis,
@@ -260,7 +263,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
     )
     dstDir_output = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         f"{container}_{version}",
         "analysis-" + analysis,
@@ -269,7 +272,7 @@ def anatrois(lc_config,lc_config_path, sub, ses, sub_ses_list_path, container_sp
         "output",
     )
     Dir_analysis = os.path.join(
-        basedir, "nifti", "derivatives", f"{container}_{version}", "analysis-" + analysis
+        basedir, bidsdir_name, "derivatives", f"{container}_{version}", "analysis-" + analysis
     )
     # create corresponding folder
     if not os.path.exists(dstdstDir_input):
@@ -366,6 +369,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     # define local variables from config dict
     # general level variables:
     basedir = lc_config["general"]["basedir"]
+    bidsdir_name= lc_config["general"]["bidsdir_name"]
     container = lc_config["general"]["container"]
     force = (lc_config["general"]["force"])&(~run_lc)
     analysis = lc_config["general"]["analysis"]
@@ -381,12 +385,12 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     
     #acq = container_specific_config["acqd"]
     # define base directory for particular subject and session
-    basedir_subses = os.path.join(basedir, "nifti", "sub-" + sub, "ses-" + ses)
+    basedir_subses = os.path.join(basedir, bidsdir_name, "sub-" + sub, "ses-" + ses)
 
     # the source directory that stores the output of previous anatorois analysis
     srcDirFs = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         precontainerfs,
         "analysis-" + preanalysisfs,
@@ -498,7 +502,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     # creat input and output directory for this container, the dstDir_output should be empty, the dstdstDir_input should contains all the symlinks
     dstdstDir_input = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         f"{container}_{version}",
         "analysis-" + analysis,
@@ -508,7 +512,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
     )
     dstDir_output = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         f"{container}_{version}",
         "analysis-" + analysis,
@@ -517,7 +521,7 @@ def rtppreproc(lc_config, lc_config_path, sub, ses,sub_ses_list_path,container_s
         "output",
     )
     Dir_analysis = os.path.join(
-        basedir, "nifti", "derivatives", f"{container}_{version}", "analysis-" + analysis
+        basedir, bidsdir_name, "derivatives", f"{container}_{version}", "analysis-" + analysis
     )
     if not os.path.exists(dstdstDir_input):
         os.makedirs(dstdstDir_input)
@@ -604,6 +608,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     # define local variables from config dict
     # general level variables:
     basedir = lc_config["general"]["basedir"]
+    bidsdir_name= lc_config["general"]["bidsdir_name"]
     container = lc_config["general"]["container"]
     force = (lc_config["general"]["force"])&(~run_lc)
     analysis = lc_config["general"]["analysis"]
@@ -619,7 +624,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     # the source directory
     srcDirfs = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         precontainerfs,
         "analysis-" + preanalysisfs,
@@ -629,7 +634,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     )
     srcDirpp = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         precontainerpp,
         "analysis-" + preanalysispp,
@@ -647,7 +652,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     # creat input and output directory for this container, the dstDir_output should be empty, the dstdstDir_input should contains all the symlinks
     dstdstDir_input = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         f"{container}_{version}",
         "analysis-" + analysis,
@@ -657,7 +662,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
     )
     dstDir_output = os.path.join(
         basedir,
-        "nifti",
+        bidsdir_name,
         "derivatives",
         f"{container}_{version}",
         "analysis-" + analysis,
@@ -666,7 +671,7 @@ def rtppipeline(lc_config,lc_config_path,sub, ses,sub_ses_list_path, container_s
         "output",
     )
     Dir_analysis = os.path.join(
-        basedir, "nifti", "derivatives", f"{container}_{version}", "analysis-" + analysis
+        basedir, bidsdir_name, "derivatives", f"{container}_{version}", "analysis-" + analysis
     )
     # under dstdstDir_input there are a lot of dir also needs to be there to have symlinks
     if not os.path.exists(dstdstDir_input):

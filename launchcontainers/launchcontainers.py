@@ -50,7 +50,7 @@ def launchcontainers(lc_config, sub_ses_list, run_it,new_lc_config_path, new_sub
     sub_ses_list: Pandas data frame
         Data frame with subject information and if run or not run
     lc_config : dict
-        Dictionary with all the values in the configuracion yaml file
+        Dictionary with all the values in the configuration yaml file
     run_it: boolean
         used to control if we run the launchcontainer, or not
     lc_config_path: Str

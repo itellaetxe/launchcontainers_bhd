@@ -6,6 +6,7 @@ import logging
 import pandas as pd
 import os
 import shutil
+import sys
 
 logger=logging.getLogger("GENERAL")
 
@@ -22,16 +23,16 @@ def get_parser():
     parser = argparse.ArgumentParser(
         description= """
         This python program helps you analysis MRI data through different containers,
-        Before you make use of this program, please edit the required config files to match your analysis demand. \n
+        Before you make use of this program, please prepare the environment, edit the required config files, to match your analysis demand. \n
         SAMPLE CMD LINE COMMAND \n\n
         ###########STEP1############# \n
         To begin the analysis, you need to first prepare and check the input files by typing this command in your bash prompt:
         python path/to/the/launchcontianer.py -lcc path/to/launchcontainer_config.yaml -ssl path/to/subject_session_info.txt 
-        -cc path/to/contianer_specific_config.json \n
+        -cc path/to/container_specific files, could be heuristic.py, a json file, or two files\n
         ##--cc note, for the case of rtp-pipeline, you need to input two paths, one for config.json and one for tractparm.csv \n\n
         ###########STEP2############# \n
         After you have done step 1, all the config files are copied to nifti/sub/ses/analysis/ directory 
-        When you are confident everthing is there, press up arrow to recall the command in STEP 1, and just add --run_lc after it. \n\n  
+        When you are confident everything is there, press up arrow to recall the command in STEP 1, and just add --run_lc after it. \n\n  
         
         We add lots of check in the script to avoid program breakdowns. if you found new bugs while running, do not hesitate to contact us"""
     , formatter_class=RawDescriptionHelpFormatter)
@@ -41,7 +42,7 @@ def get_parser():
         "--lc_config",
         type=str,
         # default="/Users/tiger/TESTDATA/PROJ01/nifti/config_launchcontainer_copy.yaml",
-        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/lc_config.yaml",
+        # default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/lc_config.yaml",
         help="path to the config file",
     )
     parser.add_argument(
@@ -49,7 +50,7 @@ def get_parser():
         "--sub_ses_list",
         type=str,
         # default="/Users/tiger/TESTDATA/PROJ01/nifti/subSesList.txt",
-        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/subSesList.txt",
+        # default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/subSesList.txt",
         help="path to the subSesList",
     )
     parser.add_argument(
@@ -57,15 +58,17 @@ def get_parser():
         "--container_specific_config",
         nargs='+',
         # default="/Users/tiger/Documents/GitHub/launchcontainers/example_configs/container_especific_example_configs/anatrois/4.2.7_7.1.1/example_config.json",
-        #default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/config.json",
-        help="path to the container specific config file(s). First file needs to be the config.json file of the container. Some containers might need more config files (e.g., rtp-pipeline needs tractparams.csv). Add them here separated with a space.",
+        # default="/export/home/tlei/tlei/PROJDATA/TESTDATA_LC/Testing_02/nifti/config.json",
+        help="path to the container specific config file(s). First file needs to be the config.json file of the container. \
+        Some containers might need more config files (e.g., rtp-pipeline needs tractparams.csv). \
+        some don't need any configs (e.g fmriprep)    Add them here separated with a space.",
     )
    
     parser.add_argument('--run_lc', action='store_true',
                         help= "if you type --run_lc, the entire program will be launched, jobs will be send to \
                         cluster and launch the corresponding container you suggest in config_lc.yaml. \
-                        We suggest that the first time you run launchcontainer.py, leave this arguement empty. \
-                        then the launchcontainer.py will preapre \
+                        We suggest that the first time you run launchcontainer.py, leave this argument empty. \
+                        then the launchcontainer.py will prepare \
                         all the input files for you and print the command you want to send to container, after you \
                         check all the configurations are correct and ready, you type --run_lc to make it run"
                         )
@@ -78,6 +81,14 @@ def get_parser():
         action="store_true",
         help="if you want to open verbose mode, type -v or --verbose, other wise the program is non-verbose mode",
                          )
+    parser.add_argument(
+        "--DEBUG",
+        action="store_true",
+        help="if you want to find out what is happening of particular step, this will print you more detailed information",
+                         )    
+    if len(sys.argv)==1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)    
     
     parse_dict = vars(parser.parse_args())
     parse_namespace= parser.parse_args()
@@ -164,7 +175,7 @@ def copy_file(src_file, dst_file, force):
         if ((not os.path.isfile(dst_file)) or (force)) or (os.path.isfile(dst_file) and force):
             shutil.copy(src_file, dst_file)
             logger.info("\n"+
-                f"---{src_file} has been succesfully copied to derivatives/analysis directory \n"+
+                f"---{src_file} has been successfully copied to {os.path.dirname(src_file)} directory \n"+
                 f"---REMEMBER TO CHECK/EDIT TO HAVE THE CORRECT PARAMETERS IN THE FILE\n"
             )
         elif os.path.isfile(dst_file) and not force:

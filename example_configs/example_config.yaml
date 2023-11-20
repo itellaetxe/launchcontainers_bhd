@@ -51,28 +51,29 @@ general:
       # description: where you want to run the program, valid options: local, BCBL, DIPC.
        
   
-  basedir: /scratch/llecca/devtrajtract/DATA/BERTSOLARI
-  containerdir: /scratch/llecca/containers
-  container: "anatrois"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
-  analysis: "03"
+  basedir: /bcbl/home/public/Gari/VOTCLOC
+  containerdir: /bcbl/home/public/Gari/singularity_images
+  container: "rtppreproc"  # VALID OPTIONS: anatrois, rtppreproc, rtp-pipeline, TODO: heudiconv, prfprepare, prfanalyze, prfresults, fmriprep
+  analysis_name: "compare_dwi"
   force: false
   host: BCBL #valid options: local, BCBL, DIPC.
   print_command_only: true
-   
+  bidsdir_name: "BIDS"
+ 
 container_specific:
 # Add the containers and options you want to run
   fmriprep:
     version: 
     space: ""
   anatrois:
-    version: 4.5.2-7.3.2
+    version: 4.6.1-7.3.2
     # If you have run FS previously, you can say true here and it will use the existing output
-    pre_fs: false
+    pre_fs: true
     # If pre_fs is true, it will try to find it using the options below
     # Add the container name and versions used to create the pre_fs
-    precontainerfs: anatrois_4.5.2-7.3.2
+    precontainer_anat: anatrois_4.5.2-7.3.2
     # There can be more than one analysis, give the number of the analysis here
-    preanalysisfs: "01"
+    anat_analysis_name: "compare_dwi"
     # It will find a zip file in the anatrois output, that starts with this string
     prefs_zipname: "anatrois"
     # These are optional input files. If there is none, leave it empty string
@@ -85,17 +86,17 @@ container_specific:
     # Old dcm2nixx will not create empty bvec and bval files if there was an acquisition with just b0-s
     # This code will create them automatically if they are not there
     # TODO: make it a function
-    rpe: ture
+    rpe: true
     # Find where the input files are. It will take the T1 and the brainmask from here
     #
     #this thing was pretoolfs originally
-    precontainerfs: anatrois_4.5.2-7.3.2
-    preanalysisfs: "01"
+    precontainer_anat: anatrois_4.5.2-7.3.2
+    anat_analysis_name: "compare_dwi"
   rtp-pipeline:
     version: 4.4.1
     # Find where the input files are. It will take the T1 and the brainmask from here        
-    precontainerfs: anatrois_4.2.7-7.1.1
-    preanalysisfs: "01"
+    precontainer_anat: anatrois_4.2.7-7.1.1
+    anat_analysis_name: "01"
     precontainerpp: rtppreproc_1.2.0-3.0.3
     preanalysispp: "01"
     # Porject level tractparams or individual tractparams can be used. 
@@ -133,7 +134,7 @@ host_options:
       extra: []
       env-extra: []
       job-extra: []
-      logdir: /export/home/llecca/public/LEPA/testlaunchcontainers/logdir
+      logdir: /bcbl/home/public/Gari/VOTCLOC/BIDS
       resource-spec: null
 
 

@@ -1,12 +1,11 @@
 import logging
-from os.path import expanduser, join
 from dask import config
 from dask.distributed import Client, LocalCluster
 from dask_jobqueue import SGECluster, SLURMCluster
 
-
 logger = logging.getLogger("GENERAL")
-def initiate_cluster(jobqueue_config, n_job):
+
+def initiate_cluster(jobqueue_config, n_job, logdir):
     '''
     Parameters
     ----------
@@ -46,7 +45,7 @@ def initiate_cluster(jobqueue_config, n_job):
                                        # job_script_prologue = None,
                                        # header_skip=None,
                                        # job_directives_skip=None,
-                                       log_directory=jobqueue_config["logdir"],
+                                       log_directory=logdir,
                                        # shebang=jobqueue_config["shebang"],
                                        # python=None,
                                        # config_name=None,
@@ -70,7 +69,7 @@ def initiate_cluster(jobqueue_config, n_job):
         cluster_by_config = SLURMCluster(cores = jobqueue_config["cores"], 
                                          memory = jobqueue_config["memory"],
                                          job_script_prologue = envextra,
-                                         log_directory = jobqueue_config["logdir"],
+                                         log_directory = logdir,
                                          queue = jobqueue_config["queue"],
                                          name = jobqueue_config["name"],
                                          death_timeout = 300,#jobqueue_config["death-timeout"],
@@ -78,7 +77,10 @@ def initiate_cluster(jobqueue_config, n_job):
                                          job_extra_directives = ["--export=ALL"])
         cluster_by_config.scale(jobs=n_job)
     elif "local" in jobqueue_config["manager"]:
+        logger.debug("defining local cluster")
         cluster_by_config=LocalCluster()
+
+        cluster_by_config.scale(jobs=n_job)
     else:
         logger.warning(
             "dask configuration wasn't detected, "
@@ -89,14 +91,14 @@ def initiate_cluster(jobqueue_config, n_job):
             "You can find a jobqueue YAML example in the pySPFM/jobqueue.yaml file."
         )
         cluster_by_config = None
-   # print(f"----------------This is the self report of funtion initiate_cluster()\n, the cluster was defined as the {jobqueue_config['manager']}cluster \n")
+   # print(f"----------------This is the self report of function initiate_cluster()\n, the cluster was defined as the {jobqueue_config['manager']}cluster \n")
    # print(f"----------------------------The cluster job_scipt is  {cluster_by_config.job_script()} \n")
    # print(f"----check for job scale,  the number of jobs is {n_job}")
    # print(f"-----under of initiate_cluster() report the cluster is {cluster_by_config}")
     return cluster_by_config
 
 
-def dask_scheduler(jobqueue_config, n_job):
+def dask_scheduler(jobqueue_config, n_job, logdir):
     if jobqueue_config is None:
         logger.warning(
             "dask configuration wasn't detected, "
@@ -104,11 +106,11 @@ def dask_scheduler(jobqueue_config, n_job):
             "the jobqueue YAML example, modify it so it works in your cluster "
             "and add it to ~/.config/dask "
             "local configuration will be used."
-            "You can find a jobqueue YAML example in the pySPFM/jobqueue.yaml file."
+            
         )
         cluster = None
     else:
-        cluster = initiate_cluster(jobqueue_config, n_job)
+        cluster = initiate_cluster(jobqueue_config, n_job, logdir)
 
     client = None if cluster is None else Client(cluster)
    

@@ -1,0 +1,21 @@
+{
+ "config": {
+    "subject_id": "Sxxx",
+    "reconall_options": "-qcache -all",
+    "hippocampal_subfields": false,
+    "brainstem_structures": false,
+    "thalamic_nuclei": false,
+    "cerebellum":false,
+    "hcp":false,
+    "mori":true,
+    "aparc2009":false,
+    "neuropythy_analysis": false,
+    "register_surfaces": false,
+    "convert_surfaces": false,
+    "convert_volumes": true,
+    "convert_stats": true,
+    "run_gtmseg": false,
+    "use_controlpoints":false,
+    "freesurfer_license": "mengluo1990@gmail.com 40915 *CLNd40FiYUKw FSfv2b7ZXo2J6"
+    }
+  }

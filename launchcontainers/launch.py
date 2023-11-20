@@ -172,11 +172,13 @@ def launchcontainer(Dir_analysis, lc_config, sub_ses_list, parser_namespace):
     logger.debug(f'\n,, this is the job_queue config {jobqueue_config}')
     
     force = lc_config["general"]["force"]    
-    
+    logdir= os.path.join(
+                Dir_analysis,"daskworker_log"
+            )
     # Count how many jobs we need to launch from  sub_ses_list
     n_jobs = np.sum(sub_ses_list.RUN == "True")
 
-    client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs)
+    client, cluster = dsq.dask_scheduler(jobqueue_config,n_jobs, logdir)
     
     logger.info("---this is the cluster and client\n"
                 +f"{client} \n cluster: {cluster} \n")

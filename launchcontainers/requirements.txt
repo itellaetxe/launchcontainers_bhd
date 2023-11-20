@@ -6,4 +6,5 @@ numpy==1.23.5
 pandas==1.5.3
 pybids==0.16.1
 PyYAML==6.0.1
-scipy==1.11.3
+PyYAML==6.0.1
+scipy==1.11.4

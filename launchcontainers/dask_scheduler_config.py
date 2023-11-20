@@ -5,7 +5,7 @@ from dask_jobqueue import SGECluster, SLURMCluster
 
 logger = logging.getLogger("GENERAL")
 
-def initiate_cluster(jobqueue_config, n_job):
+def initiate_cluster(jobqueue_config, n_job, logdir):
     '''
     Parameters
     ----------
@@ -45,7 +45,7 @@ def initiate_cluster(jobqueue_config, n_job):
                                        # job_script_prologue = None,
                                        # header_skip=None,
                                        # job_directives_skip=None,
-                                       log_directory=jobqueue_config["logdir"],
+                                       log_directory=logdir,
                                        # shebang=jobqueue_config["shebang"],
                                        # python=None,
                                        # config_name=None,
@@ -69,7 +69,7 @@ def initiate_cluster(jobqueue_config, n_job):
         cluster_by_config = SLURMCluster(cores = jobqueue_config["cores"], 
                                          memory = jobqueue_config["memory"],
                                          job_script_prologue = envextra,
-                                         log_directory = jobqueue_config["logdir"],
+                                         log_directory = logdir,
                                          queue = jobqueue_config["queue"],
                                          name = jobqueue_config["name"],
                                          death_timeout = 300,#jobqueue_config["death-timeout"],
@@ -98,7 +98,7 @@ def initiate_cluster(jobqueue_config, n_job):
     return cluster_by_config
 
 
-def dask_scheduler(jobqueue_config, n_job):
+def dask_scheduler(jobqueue_config, n_job, logdir):
     if jobqueue_config is None:
         logger.warning(
             "dask configuration wasn't detected, "
@@ -110,7 +110,7 @@ def dask_scheduler(jobqueue_config, n_job):
         )
         cluster = None
     else:
-        cluster = initiate_cluster(jobqueue_config, n_job)
+        cluster = initiate_cluster(jobqueue_config, n_job, logdir)
 
     client = None if cluster is None else Client(cluster)
    

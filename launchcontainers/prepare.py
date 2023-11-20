@@ -1,5 +1,5 @@
 import logging
-import createsymlinks as csl
+import prepare_dwi as dwipre
 import os
 import filecmp
 import utils as do
@@ -30,14 +30,12 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     basedir = lc_config['general']['basedir']
     container = lc_config['general']['container']
     force = lc_config["general"]["force"]
-    host=lc_config['general']['host']
-    config_name=lc_config['container_specific'][container]['config_name']
     analysis_name= lc_config['general']['analysis_name']
     
     found_analysis_dir=False
     run_lc = parser_namespace.run_lc
     
-    force= force and (not run_lc)    
+    force= force or run_lc    
     
     version = lc_config["container_specific"][container]["version"]    
     # get the analysis folder information
@@ -46,149 +44,62 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     if not os.path.isdir(container_folder):
         os.makedirs(container_folder)
     
-    entities= os.listdir(container_folder)
-    
-    analysis_folders= [dir_ana for dir_ana in entities if os.path.isdir(os.path.join(container_folder,dir_ana))]
-    
-    if not analysis_folders:
-        analysis_num=1
-    else:
-        newest_analysis_dir= max(analysis_folders, key= lambda d: os.path.getmtime(os.path.join(container_folder,d)))
-        logger.debug(f'this is the newest analysis dir we get {newest_analysis_dir}')
-        
-        detected_analysis_name= newest_analysis_dir.split('/')[-1].split('-')[1]
-        detected_analysis_num= newest_analysis_dir.split('/')[-1].split('-')[2]
-
-        if not detected_analysis_name == analysis_name:
-            analysis_num=1
-            logger.debug(f'detected analysis name is {detected_analysis_name}, it is different from what you provide in lc_config yaml {analysis_name}')
-        else:
-            analysis_num=int(detected_analysis_num)
-    
-    # Get the input config files from parser  
-    original_files = [parser_namespace.lc_config, parser_namespace.sub_ses_list] + parser_namespace.container_specific_config
     
 
-    # check: if the analysis folder is already exit
-        # if it is exit, check if the config information of lc_yaml, the looping information of subseslist and container specific config are the same
-        # if either one of them have any tiny mistake, make a new analysis folder, and copy them to there, and give a note: this is new thing, different from 
-        # what you are indicating, we add a new thing for your
-    while not found_analysis_dir and analysis_num <100 and not run_lc:
-        
-        
-        Dir_analysis = os.path.join(
+    Dir_analysis = os.path.join(
         container_folder, ##########before , there is _{version}
-        f"analysis-{analysis_name}-{analysis_num:02d}",
+        f"analysis-{analysis_name}",
                 )
+    
         
+    # define the potential exist config files
+    path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
+    path_to_analysis_sub_ses_list = os.path.join(Dir_analysis, "subSesList.txt")
+    
+    if container  not in ['rtp-pipeline', 'fmriprep']:    
+        path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, "config.json")]
+    if container == 'rtp-pipeline':
+        path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, "config.json"), os.path.join(Dir_analysis, "tractparams.csv")]
+    if container == 'fmriprep':
+        path_to_analysis_container_specific_config=[]
+    #TODO: heudiconv, nordic, presurfer
+    
 
-        logger.debug(f'\n this is the analysis {analysis_num} we are searching')
+
+    if not run_lc:
+        logger.warning(f'\nthis is PREPARE MODE, starts to  create analysis folder and copy the configs')
+        if not os.path.isdir(Dir_analysis):
+            os.makedirs(Dir_analysis)
         
-        # define the potential exist config files
-        path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
-        path_to_analysis_sub_ses_list = os.path.join(Dir_analysis, "subSesList.txt")
+        # backup the config info
         
-        if container  not in ['rtp-pipeline', 'fmriprep']:    
-            path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}.json")]
-        if container == 'rtp-pipeline':
-            path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}",+".json"), os.path.join(Dir_analysis, "tractparams.csv")]
-        if container == 'fmriprep':
-            path_to_analysis_container_specific_config=[]
+        do.copy_file(parser_namespace.lc_config, path_to_analysis_lc_config, force) 
+        do.copy_file(parser_namespace.sub_ses_list,path_to_analysis_sub_ses_list,force)
+        for orig_config_json, copy_config_json in zip(parser_namespace.container_specific_config,path_to_analysis_container_specific_config):
+            do.copy_file(orig_config_json, copy_config_json, force)    
+        logger.debug(f'\n the analysis folder is {Dir_analysis}, all the cofigs has been copied') 
+    
+    if run_lc:
+        logger.warning(f'\n RUN MODE, this is the analysis folder that we are going to run:\n {Dir_analysis}')
         
-        Dict_configs_under_analysisfolder={
-        'new_lc_config_path':path_to_analysis_lc_config,
-        'new_sub_ses_list_path':path_to_analysis_sub_ses_list,
-        'new_container_specific_config_path': path_to_analysis_container_specific_config
-            }
+        do.copy_file(parser_namespace.lc_config, path_to_analysis_lc_config, force) 
+        do.copy_file(parser_namespace.sub_ses_list,path_to_analysis_sub_ses_list,force)
+        for orig_config_json, copy_config_json in zip(parser_namespace.container_specific_config,path_to_analysis_container_specific_config):
+            do.copy_file(orig_config_json, copy_config_json, force)    
+        logger.debug(f'\n the analysis folder is {Dir_analysis}, all the cofigs has been copied')         
         
         copies = [path_to_analysis_lc_config, path_to_analysis_sub_ses_list] + path_to_analysis_container_specific_config
     
         all_copies_present= all(os.path.isfile(copy_path) for copy_path in copies)
-        
-        logger.debug (f'\n the config.json is {path_to_analysis_container_specific_config}')
-        
-        # compare if all the files are the same
-        general_input= lc_config["general"]
-        container_input=lc_config["container_specific"][container]
-        logger.debug(host)
-        host_input= lc_config["host_options"][host]
-        
 
-        
-        if os.path.isdir(Dir_analysis):
-            logger.debug(f'\n we found the exist analysis dir, going to check if all the config information'
-                         +'is the same as the input')
-
-            if all_copies_present:
-                lc_config_copy=do.read_yaml(path_to_analysis_lc_config)
-                
-                container_ana= lc_config_copy['general']['container']
-                host_ana=lc_config_copy['general']['host']
-                
-                general_copy= lc_config_copy["general"]
-                container_copy=lc_config_copy["container_specific"][container_ana]
-                host_copy= lc_config_copy["host_options"][host_ana]
-                
-                logger.debug(f"\n this is the config from input {host_input}"
-                             + f"\n this is the config from the copy of {Dir_analysis} \n {host_copy}"
-                              + f"they are {host_input == host_copy} the same" )
-                
-                compare_config_yaml= (general_input==general_copy) and (container_input==container_copy) and (host_input==host_copy)
-
-                are_they_same = all(filecmp.cmp(orig, copy, shallow=False)
-                                for orig, copy in zip(original_files[1:], copies[1:])) and compare_config_yaml
-            
-                if are_they_same:
-                    logger.debug(f'\n for the {Dir_analysis}, it has all the config copies and the config information are the same:\t {all_copies_present}')
-                    logger.warning("\n"
-                                + f"the config files in {Dir_analysis} are the same as your input, remain old filesif you are confident to run, type --run_lc flag")
-                    #return Dir_analysis,Dict_configs_under_analysisfolder
-                    break
-                # if the config info are all the same, we didn't create new analysis folder
-                else:
-                    logger.info("\n"
-                                + f"the config files in {Dir_analysis} are NOT the same as your input create new analysis folder"
-                                + f"going to create analysis {analysis_num:02}")
-                    analysis_num+=1   
-            else:
-                analysis_num+=1 
-
-        if not os.path.isdir(Dir_analysis):
-            
-            os.makedirs(Dir_analysis)
-            do.copy_file(parser_namespace.lc_config, path_to_analysis_lc_config, force) 
-            do.copy_file(parser_namespace.sub_ses_list,path_to_analysis_sub_ses_list,force)
-            for orig_config_json, copy_config_json in zip(parser_namespace.container_specific_config,path_to_analysis_container_specific_config):
-                do.copy_file(orig_config_json, copy_config_json, force)    
-            logger.debug(f'\n the analysis folder is not here, break the while loop') 
-            break
-    if run_lc:
-        Dir_analysis= os.path.join(container_folder, newest_analysis_dir)
-        
-        path_to_analysis_lc_config = os.path.join(Dir_analysis, "lc_config.yaml")
-        path_to_analysis_sub_ses_list = os.path.join(Dir_analysis, "subSesList.txt")
-        
-        if container  not in ['rtp-pipeline', 'fmriprep']:    
-            path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}.json")]
-        if container == 'rtp-pipeline':
-            path_to_analysis_container_specific_config = [os.path.join(Dir_analysis, f"{config_name}",+".json"), os.path.join(Dir_analysis, "tractparams.csv")]
-        if container == 'fmriprep':
-            path_to_analysis_container_specific_config=[]
-        
-        Dict_configs_under_analysisfolder={
-        'new_lc_config_path':path_to_analysis_lc_config,
-        'new_sub_ses_list_path':path_to_analysis_sub_ses_list,
-        'new_container_specific_config_path': path_to_analysis_container_specific_config
-            }
-        
-    logger.debug(f'\n this is the analysis folder that goes to other places:\n {Dir_analysis}')
-    
-    #sys.exit(1)
-    #return  Dir_analysis
-    return Dir_analysis, Dict_configs_under_analysisfolder
+        if all_copies_present:
+            pass
+        else:
+            logger.error(f'\n did NOT detect back up configs in the analysis folder, Please check then continue the run mode')
+    return Dir_analysis 
 
 # %% prepare_input_files
-def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
+def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes, layout):
     """
 
     Parameters
@@ -227,8 +138,9 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
         logger.info(f'dwi is {dwi}')
         logger.info("\n"
                     +"The current run is: \n"
-                    +f"{sub}_{ses}_RUN-{RUN}_{container}_{version}\n")
+                    +f"{sub}_{ses}_{container}_{version}\n")
         
+
         if RUN == "True" and dwi == "True":
                         
             tmpdir = os.path.join(
@@ -243,19 +155,15 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
                 "ses-" + ses,
                 "output", "log"
             )
-            backup_configs = os.path.join(
-                Dir_analysis,
-                "sub-" + sub,
-                "ses-" + ses,
-                "output", "configs"
-            )
+
             if not os.path.isdir(tmpdir):
                 os.makedirs(tmpdir)
             if not os.path.isdir(logdir):
                 os.makedirs(logdir)
             
             if "rtppreproc" in container:
-                csl.rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses)
+                dwipre.rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses, layout)
+            
             elif "rtp-pipeline" in container:
                 
                 if not len(parser_namespace.container_specific_config_path) == 2:
@@ -263,10 +171,11 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes):
                               +f"Input file error: the RTP-PIPELINE config is not provided completely")
                     raise FileNotFoundError('The RTP-PIPELINE needs the config.json and tratparams.csv as container specific configs')
                 
-                csl.rtppipeline(parser_namespace, Dir_analysis,lc_config, sub, ses)
+                dwipre.rtppipeline(parser_namespace, Dir_analysis,lc_config, sub, ses, layout)
+            
             elif "anatrois" in container:
                 logger.info('we do the anatrois')
-                csl.anatrois(parser_namespace, Dir_analysis,lc_config,sub, ses)
+                dwipre.anatrois(parser_namespace, Dir_analysis,lc_config,sub, ses, layout)
             
             else:
                 logger.error("\n"+

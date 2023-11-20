@@ -1,7 +1,6 @@
 import logging
 import prepare_dwi as dwipre
 import os
-import filecmp
 import utils as do
 import numpy as np 
 import os.path as path
@@ -32,7 +31,6 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     force = lc_config["general"]["force"]
     analysis_name= lc_config['general']['analysis_name']
     
-    found_analysis_dir=False
     run_lc = parser_namespace.run_lc
     
     force= force or run_lc    
@@ -81,12 +79,12 @@ def prepare_analysis_folder(parser_namespace, lc_config):
     
     if run_lc:
         logger.warning(f'\n RUN MODE, this is the analysis folder that we are going to run:\n {Dir_analysis}')
-        
+        # also copy the newest
         do.copy_file(parser_namespace.lc_config, path_to_analysis_lc_config, force) 
         do.copy_file(parser_namespace.sub_ses_list,path_to_analysis_sub_ses_list,force)
         for orig_config_json, copy_config_json in zip(parser_namespace.container_specific_config,path_to_analysis_container_specific_config):
             do.copy_file(orig_config_json, copy_config_json, force)    
-        logger.debug(f'\n the analysis folder is {Dir_analysis}, all the cofigs has been copied')         
+        logger.debug(f'\n the analysis folder is {Dir_analysis}, all the configs has been copied')         
         
         copies = [path_to_analysis_lc_config, path_to_analysis_sub_ses_list] + path_to_analysis_container_specific_config
     

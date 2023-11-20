@@ -390,12 +390,12 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses, layout):
     
 
     container_specific_config_data = json.load(open(srcFile_container_config_json))
-    phaseEnco_direc = container_specific_config_data["config"]["pe_dir"]
+    # if version =='1.2.0-3.0.3':
+    #     phaseEnco_direc = container_specific_config_data["config"]["pe_dir"]
+    # if version =='1.1.3':
+    #     phaseEnco_direc = container_specific_config_data["config"]["acqd"]
     
-    #acq = container_specific_config["acqd"]
-    # define base directory for particular subject and session
-    basedir_subses = os.path.join(basedir, bidsdir_name, "sub-" + sub, "ses-" + ses)
-
+    phaseEnco_direc = container_specific_config_data["config"]["acqd"]
     # the source directory that stores the output of previous anatrois analysis
     srcDirFs = os.path.join(
         basedir,
@@ -600,14 +600,14 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses, layout):
     force = (lc_config["general"]["force"])
     force = force and (not run_lc)
     # rtppipeline specefic variables
-    version = lc_config["container_specific"][container]["version"]
+
     precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
     anat_analysis_name = lc_config["container_specific"][container]["anat_analysis_name"]
     precontainer_preproc = lc_config["container_specific"][container]["precontainer_preproc"]
     preproc_analysis_num = lc_config["container_specific"][container]["preproc_analysis_num"]
-    srcFile_container_config_json= container_specific_config_path[0]
+
     srcFile_tractparams= container_specific_config_path[1]
-    new_container_specific_config_path=[]
+
     # the source directory
     srcDirfs = os.path.join(
         basedir,
@@ -689,7 +689,7 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses, layout):
     force_symlink(srcFileDwi_nii, dstDwi_niiFile, force)
     force_symlink(srcFileDwi_bvec, dstDwi_bvecFile, force)
     force_symlink(srcFileDwi_bvals, dstDwi_bvalFile, force)
-    force_symlink(dstFile_tractparams, dst_tractparams, force)
+    force_symlink(srcFile_tractparams, dst_tractparams, force)
     logger.info("\n"
                +"-----------------The rtppipeline symlinks created\n")
     return 

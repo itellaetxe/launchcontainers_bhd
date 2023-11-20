@@ -12,7 +12,7 @@ from bids import BIDSLayout
 logger=logging.getLogger("GENERAL")
 
 # %% launchcontainers
-def generate_cmd(lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc):
+def generate_cmd(lc_config,sub,ses,Dir_analysis, lst_container_specific_configs,run_lc):
     
     basedir=lc_config['general']['basedir']
     homedir= os.path.join(basedir,'singularity_home')
@@ -22,18 +22,23 @@ def generate_cmd(lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,ru
     
     jobqueue_config= lc_config['host_options'][host]
     version = lc_config["container_specific"][container]["version"]
-    envcmd= f"module load {jobqueue_config['sin_ver']} "\
+    envcmd= f"module load {jobqueue_config['sin_ver']} "
     
     container_sif_file= os.path.join(containerdir, f'{container}_{version}.sif')
+
+
     if container in ['anatrois', 'rtppreproc','rtp-pipeline']:
         logger.info("\n"+ f'start to generate the DWI PIPELINE command')
+        config_json= lst_container_specific_configs[0]
         logdir= os.path.join(
                 Dir_analysis,
                 "sub-" + sub,
                 "ses-" + ses,
                 "output", "log"
             )
+        
         logfilename=f"{logdir}/t-{container}-sub-{sub}_ses-{ses}"
+        
         path_to_sub_derivatives=os.path.join(Dir_analysis,
                                         f"sub-{sub}",
                                         f"ses-{ses}")
@@ -45,7 +50,7 @@ def generate_cmd(lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,ru
                 f"--bind /export:/export "\
                 f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
                 f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                f"--bind {path_to_analysis_config_json[0]}:/flywheel/v0/config.json "\
+                f"--bind {config_json}:/flywheel/v0/config.json "\
                 f"{container_sif_file} 2>> {logfilename}.e 1>> {logfilename}.o "
         if ("local" == host):
             cmd=envcmd+f"singularity run -e --no-home "\
@@ -54,7 +59,7 @@ def generate_cmd(lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,ru
                 f"--bind /export:/export "\
                 f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
                 f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                f"--bind {path_to_analysis_config_json}:/flywheel/v0/config.json "\
+                f"--bind {config_json}:/flywheel/v0/config.json "\
                 f"{container_sif_file} 2>> {logfilename}.e 1>> {logfilename}.o "
         
         elif "DIPC" == host:
@@ -62,7 +67,7 @@ def generate_cmd(lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,ru
                 f"--bind /scratch:/scratch "\
                 f"--bind {path_to_sub_derivatives}/input:/flywheel/v0/input:ro "\
                 f"--bind {path_to_sub_derivatives}/output:/flywheel/v0/output "\
-                f"--bind {path_to_analysis_config_json}:/flywheel/v0/config.json "\
+                f"--bind {config_json}:/flywheel/v0/config.json "\
                 f"{container_sif_file} 2>> {logfilename}.e 1>> {logfilename}.o "
     
     if container == 'fmriprep':
@@ -148,7 +153,7 @@ def generate_cmd(lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,ru
     return cmd
  
 #%% the launchcontainer
-def launchcontainer(Dir_analysis, lc_config, sub_ses_list, Dict_configs_under_analysisfolder, run_lc):
+def launchcontainer(Dir_analysis, lc_config, sub_ses_list, parser_namespace):
     """
     This function launches containers generically in different Docker/Singularity HPCs
     This function is going to assume that all files are where they need to be.
@@ -175,6 +180,8 @@ def launchcontainer(Dir_analysis, lc_config, sub_ses_list, Dict_configs_under_an
     
     logger.info("---this is the cluster and client\n"
                 +f"{client} \n cluster: {cluster} \n")
+
+    run_lc= parser_namespace.run_lc
 
     lc_configs=[]
     subs=[]
@@ -205,35 +212,25 @@ def launchcontainer(Dir_analysis, lc_config, sub_ses_list, Dict_configs_under_an
         dwi  = row.dwi
         if RUN=="True":
 
+            lst_container_specific_configs = parser_namespace.container_specific_config
 
-
-            path_to_analysis_config_json = Dict_configs_under_analysisfolder.container_specific_config
-
-
-
-    
-            
             lc_configs.append(lc_config)
             subs.append(sub)
             sess.append(ses)
             Dir_analysiss.append(Dir_analysis)
-            paths_to_analysis_config_json.append(path_to_analysis_config_json)
+            paths_to_analysis_config_json.append(lst_container_specific_configs)
             run_lcs.append(run_lc)
             
             if not run_lc:
                 # this cmd is only for print the command 
-                command= generate_cmd(lc_config,sub,ses,Dir_analysis, path_to_analysis_config_json,run_lc)
+                command= generate_cmd(lc_config,sub,ses,Dir_analysis, lst_container_specific_configs,run_lc)
                 logger.critical(f"\nCOMMAND for subject-{sub}, and session-{ses}:\n" \
                                 f"{command}\n\n"
                                 )
                 if lc_config['general']['container']=='fmriprep':
                     logger.critical('\n'+ 'fmriprep now can not deal with session specification, so the analysis are running on all sessions of the subject you are specifying')
 
-   
 
-
-  
-        
     if run_lc:    
         futures = client.map(generate_cmd,lc_configs,subs,sess,Dir_analysiss,paths_to_analysis_config_json, run_lcs)
         progress(futures)
@@ -264,7 +261,6 @@ def main():
     sub_ses_list = do.read_df(sub_ses_list_path)    
     
     # stored value
-    run_lc = parser_namespace.run_lc
     
     verbose=parser_namespace.verbose
     
@@ -300,7 +296,7 @@ def main():
         pass
     
     # run mode
-    launchcontainer(Dir_analysis, lc_config , sub_ses_list, parser_namespace, run_lc)
+    launchcontainer(Dir_analysis, lc_config , sub_ses_list, parser_namespace)
     
 
     

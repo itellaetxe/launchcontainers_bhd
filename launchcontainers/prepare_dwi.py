@@ -199,8 +199,8 @@ def anatrois(parser_namespace, Dir_analysis,lc_config, sub, ses, layout):
     pre_fs = lc_config["container_specific"][container]["pre_fs"]
     prefs_zipname = lc_config["container_specific"][container]["prefs_zipname"]
     # I added this line, shall we modify config yaml
-    precontainer_anat = lc_config["container_specific"][container]["precontainer_anat:"]
-    anat_analysis_name = lc_config["container_specific"][container]["anat_analysis_name:"]
+    precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
+    anat_analysis_name = lc_config["container_specific"][container]["anat_analysis_name"]
     annotfile = lc_config["container_specific"][container]["annotfile"]
     mniroizip = lc_config["container_specific"][container]["mniroizip"]
     version = lc_config["container_specific"][container]["version"]

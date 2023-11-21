@@ -110,7 +110,7 @@ def read_yaml(path_to_config_file):
 
     container = config["general"]["container"]
 
-    logger.info("\n"+
+    logger.warning("\n"+
             "#####################################################\n"
             +f"Successfully read the config file {path_to_config_file} \n"
             +f'Basedir is: {config["general"]["basedir"]} \n'

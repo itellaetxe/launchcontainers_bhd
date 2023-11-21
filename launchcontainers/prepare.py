@@ -156,6 +156,7 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes, layo
 
             if not os.path.isdir(tmpdir):
                 os.makedirs(tmpdir)
+            logger.info(f"\n the tmp dir is created at {tmpdir}, and it is {os.path.isdir(tmpdir)} that this file exists")
             if not os.path.isdir(logdir):
                 os.makedirs(logdir)
             
@@ -164,7 +165,7 @@ def prepare_dwi_input(parser_namespace, Dir_analysis, lc_config, df_subSes, layo
             
             elif "rtp-pipeline" in container:
                 
-                if not len(parser_namespace.container_specific_config_path) == 2:
+                if not len(parser_namespace.container_specific_config) == 2:
                     logger.error("\n"
                               +f"Input file error: the RTP-PIPELINE config is not provided completely")
                     raise FileNotFoundError('The RTP-PIPELINE needs the config.json and tratparams.csv as container specific configs')

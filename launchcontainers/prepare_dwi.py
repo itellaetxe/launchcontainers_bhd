@@ -590,7 +590,7 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses, layout):
     # define local variables from config dict
     # input from get_parser
 
-    container_specific_config_path= parser_namespace.container_specific_config
+
     run_lc=parser_namespace.run_lc
     
     # general level variables:
@@ -604,9 +604,9 @@ def rtppipeline(parser_namespace, Dir_analysis,lc_config,sub, ses, layout):
     precontainer_anat = lc_config["container_specific"][container]["precontainer_anat"]
     anat_analysis_name = lc_config["container_specific"][container]["anat_analysis_name"]
     precontainer_preproc = lc_config["container_specific"][container]["precontainer_preproc"]
-    preproc_analysis_num = lc_config["container_specific"][container]["preproc_analysis_num"]
-
-    srcFile_tractparams= container_specific_config_path[1]
+    preproc_analysis_num = lc_config["container_specific"][container]["preproc_analysis_name"]
+    # there is a bug before, when create symlinks the full path of trachparams are not passed, very weired
+    srcFile_tractparams= os.path.join(Dir_analysis, "tractparams.csv")
 
     # the source directory
     srcDirfs = os.path.join(

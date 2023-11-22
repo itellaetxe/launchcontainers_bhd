@@ -116,6 +116,7 @@ def read_yaml(path_to_config_file):
             +f'Basedir is: {config["general"]["basedir"]} \n'
             +f'Container is: {container}_{config["container_specific"][container]["version"]} \n'
             +f'Host is: {config["general"]["host"]} \n'
+            +f'analysis folder is: {config["general"]["analysis_name"]} \n'
             +f"##################################################### \n")
 
     return config

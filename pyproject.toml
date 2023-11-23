@@ -21,6 +21,10 @@ keywords = ["Age Modelling", "Brain Age"]
 classifiers = ["Topic :: Software Development :: Libraries :: Python Modules"]
 packages = [{include = "launchcontainers", from = "src"}]
 
+[tool.poetry.scripts]
+launchcontainers = "launchcontainers.launch:main"
+
+
 [tool.poetry.dependencies]
 python = ">=3.9, <3.12"
 bids = "*"

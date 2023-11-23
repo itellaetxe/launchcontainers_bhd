@@ -413,7 +413,11 @@ def rtppreproc(parser_namespace, Dir_analysis, lc_config, sub, ses, layout):
     # T1 file in anatrois output
     srcFileT1 = os.path.join(srcDirFs, "T1.nii.gz")
     # brain mask file in anatrois output
-    srcFileMask = os.path.join(srcDirFs, "brainmask.nii.gz")
+    logger.debug(f'\n the precontainer_ana is {precontainer_anat}')
+    if int(precontainer_anat.split('.')[1])<6: 
+        srcFileMask = os.path.join(srcDirFs, "brainmask.nii.gz")
+    if int(precontainer_anat.split('.')[1])>5: 
+        srcFileMask = os.path.join(srcDirFs, "brain.nii.gz")
     
     # 3 dwi file that needs to be preprocessed, under BIDS/sub/ses/dwi
     # the nii

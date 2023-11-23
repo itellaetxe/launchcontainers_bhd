@@ -4,11 +4,12 @@ import numpy as np
 import logging
 # modules in lc
 
-from dask.distributed import progress
-import dask_scheduler_config as dsq
-import prepare as prepare
-import utils as do
 from bids import BIDSLayout
+from dask.distributed import progress
+
+import launchcontainers.dask_scheduler_config as dsq
+import launchcontainers.prepare as prepare
+import launchcontainers.utils as do
 
 logger=logging.getLogger("GENERAL")
 
